@@ -227,11 +227,11 @@ const Sidebar = () => {
     {
       label: 'Blog',
       icon: FileText,
-      path: '/blog',
+      path: '/blogs',
       submenu: [
-        { label: 'All Blogs', path: '/blog/all' },
-        { label: 'Categories', path: '/blog/categories' },
-        { label: 'Tags', path: '/blog/tags' }
+        { label: 'All Blogs', path: '/blogs' },
+        { label: 'Categories', path: '/blogs/category' },
+        { label: 'Tags', path: '/blogs/tag' }
       ]
     },
     {
