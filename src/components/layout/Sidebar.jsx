@@ -1,55 +1,344 @@
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import styled from 'styled-components';
+import Jsk_Logo from '../../assets/Jsk_Logo.svg';
+import logo from '../../assets/logo.svg';
+import { 
+  HomeIcon, 
+  Users, 
+  CreditCard, 
+  ShoppingBag, 
+  Image as ImageIcon, 
+  FileText, 
+  Percent, 
+  Truck, 
+  Tag, 
+  DollarSign, 
+  Star, 
+  HelpCircle, 
+  Settings, 
+  ChevronRight,
+  ChevronDown,
+  Grid 
+} from 'lucide-react';
 
-const Sidebar = ({ isOpen, setIsOpen }) => {
+const SidebarContainer = styled.div`
+  width: 280px;
+  height: 100vh;
+  background: #0B1222;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 50;
+  transition: transform 0.3s ease;
+
+  @media (max-width: 768px) {
+    transform: translateX(${props => props.isOpen ? '0' : '-100%'});
+  }
+`;
+
+const LogoSection = styled.div`
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .logo-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .logo-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      img.jsk-logo {
+        height: 36px;
+        width: auto;
+      }
+
+      img.logo-text {
+        height: 24px;
+        width: auto;
+      }
+    }
+
+    .powered-text {
+      color: #64748B;
+      font-size: 0.625rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+  }
+
+  .grid-icon {
+    color: #64748B;
+    cursor: pointer;
+    transition: color 0.2s;
+
+    &:hover {
+      color: #fff;
+    }
+  }
+`;
+
+const NavSection = styled.nav`
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 0;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #1E293B;
+    border-radius: 2px;
+  }
+`;
+
+const MenuItem = styled.div`
+  position: relative;
+`;
+
+const MenuButton = styled.button`
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  color: ${props => props.isActive ? '#rgb(247, 241, 241)' : '#64748B'};
+  background: ${props => props.isActive ? '#1E293B' : 'transparent'};
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  font-size: 0.9375rem;
+  position: relative;
+
+  &:hover {
+    color:rgb(247, 241, 241);
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .arrow {
+    margin-left: auto;
+    width: 16px;
+    height: 16px;
+  }
+`;
+
+const SubMenu = styled.div`
+  background: #111827;
+  overflow: hidden;
+  max-height: ${props => props.isOpen ? props.itemCount * 45 + 'px' : '0'};
+  transition: max-height 0.3s ease;
+`;
+
+const SubMenuItem = styled(Link)`
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 3rem;
+  color: #64748B;
+  text-decoration: none;
+  font-size: 0.9375rem;
+  transition: all 0.2s;
+  position: relative;
+
+  &:hover {
+    color: #3B82F6;
+  }
+
+  &.active {
+    color: #3B82F6;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 2rem;
+    top: 50%;
+    width: 4px;
+    height: 1px;
+    background: currentColor;
+  }
+`;
+
+const Sidebar = () => {
   const location = useLocation();
-  
+  const [isOpen, setIsOpen] = useState(true);
+  const [openMenus, setOpenMenus] = useState(['Orders']);
+
   const menuItems = [
-    { path: '/', label: 'Dashboard', icon: '📊' },
-    { path: '/products', label: 'Products', icon: '💎' },
-    { path: '/orders', label: 'Orders', icon: '📦' },
-    { path: '/customers', label: 'Customers', icon: '👥' },
-    { path: '/settings', label: 'Settings', icon: '⚙️' },
+    {
+      label: 'Dashboard',
+      icon: HomeIcon,
+      path: '/'
+    },
+    {
+      label: 'Users',
+      icon: Users,
+      path: '/users',
+      submenu: [
+        { label: 'Add User', path: '/users/add' },
+        { label: 'All Users', path: '/users/all' },
+        { label: 'Role', path: '/users/role' }
+      ]
+    },
+    {
+      label: 'Products',
+      icon: CreditCard,
+      path: '/products',
+      submenu: [
+        { label: 'Add Product', path: '/products/add' },
+        { label: 'All Products', path: '/products/all' },
+        { label: 'Attributes', path: '/products/attributes' },
+        { label: 'Categories', path: '/products/categories' },
+        { label: 'Tags', path: '/products/tags' }
+      ]
+    },
+    {
+      label: 'Orders',
+      icon: ShoppingBag,
+      path: '/orders',
+      submenu: [
+        { label: 'All Orders', path: '/orders/all' },
+        { label: 'Create Order', path: '/orders/create' }
+      ]
+    },
+    {
+      label: 'Media',
+      icon: ImageIcon,
+      path: '/media'
+    },
+    {
+      label: 'Blog',
+      icon: FileText,
+      path: '/blog',
+      submenu: [
+        { label: 'All Blogs', path: '/blog/all' },
+        { label: 'Categories', path: '/blog/categories' },
+        { label: 'Tags', path: '/blog/tags' }
+      ]
+    },
+    {
+      label: 'Taxies',
+      icon: Percent,
+      path: '/taxies'
+    },
+    {
+      label: 'Shipping',
+      icon: Truck,
+      path: '/shipping'
+    },
+    {
+      label: 'Coupons',
+      icon: Tag,
+      path: '/coupons'
+    },
+    {
+      label: 'Currencies',
+      icon: DollarSign,
+      path: '/currencies'
+    },
+    {
+      label: 'Review',
+      icon: Star,
+      path: '/review'
+    },
+    {
+      label: "FAQ's",
+      icon: HelpCircle,
+      path: '/faqs'
+    },
+    {
+      label: 'Settings',
+      icon: Settings,
+      path: '/settings'
+    }
   ];
 
-  const isActiveLink = (path) => {
-    return location.pathname === path;
+  const toggleMenu = (label) => {
+    setOpenMenus(prev => 
+      prev.includes(label) 
+        ? prev.filter(item => item !== label)
+        : [...prev, label]
+    );
   };
+
+  const isMenuOpen = (label) => openMenus.includes(label);
+  const isActive = (path) => location.pathname === path;
 
   return (
     <>
-      {/* Mobile sidebar backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setIsOpen(false)}
-        ></div>
-      )}
+      <SidebarContainer isOpen={isOpen}>
+        <LogoSection>
+          <div className="logo-container">
+            <div className="logo-main">
+              <img src={Jsk_Logo} alt="JSK" className="jsk-logo" />
+              <img src={logo} alt="JSK" className="logo-text" size={20} />
+            </div>
+            {/* <span className="powered-text">Powered by Jameel Group AI</span> */}
+          </div>
+          {/* <Grid className="grid-icon" size={20} onClick={() => setIsOpen(!isOpen)} /> */}
+        </LogoSection>
 
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-center h-16 bg-gray-800">
-          <h1 className="text-white text-xl font-bold">Jameel Admin</h1>
-        </div>
-
-        <nav className="mt-8">
+        <NavSection>
           {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 ${
-                isActiveLink(item.path) ? 'bg-gray-100 border-r-4 border-gray-800' : ''
-              }`}
-            >
-              <span className="text-xl mr-3">{item.icon}</span>
-              {item.label}
-            </Link>
+            <MenuItem key={item.path}>
+              {item.submenu ? (
+                <>
+                  <MenuButton
+                    isActive={isActive(item.path)}
+                    onClick={() => toggleMenu(item.label)}
+                  >
+                    <item.icon />
+                    <span>{item.label}</span>
+                    {isMenuOpen(item.label) ? (
+                      <ChevronDown className="arrow" />
+                    ) : (
+                      <ChevronRight className="arrow" />
+                    )}
+                  </MenuButton>
+                  <SubMenu isOpen={isMenuOpen(item.label)} itemCount={item.submenu.length}>
+                    {item.submenu.map((subItem) => (
+                      <SubMenuItem
+                        key={subItem.path}
+                        to={subItem.path}
+                        className={isActive(subItem.path) ? 'active' : ''}
+                      >
+                        {subItem.label}
+                      </SubMenuItem>
+                    ))}
+                  </SubMenu>
+                </>
+              ) : (
+                <MenuButton
+                  as={Link}
+                  to={item.path}
+                  isActive={isActive(item.path)}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </MenuButton>
+              )}
+            </MenuItem>
           ))}
-        </nav>
-      </div>
+        </NavSection>
+      </SidebarContainer>
     </>
   );
 };
