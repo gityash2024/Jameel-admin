@@ -31,6 +31,10 @@ import Customers from './pages/Customers';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
+import Sales from './pages/Sales';
+import SaleDetails from './pages/SaleDetails';
+import SaleProductlist from './pages/SaleProductlist';
+import SaleOver from './pages/SaleOver';
 
 function App() {
   return (
@@ -65,6 +69,10 @@ function App() {
           <Route path="users/role" element={<RoleUser />} />
           <Route path="customers" element={<Customers />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="sales" element={<Sales />} />
+          <Route path="sales/details" element={<SaleDetails />} />
+          <Route path="sales/productlist" element={<SaleProductlist />} />
+          <Route path="sales/over" element={<SaleOver />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
