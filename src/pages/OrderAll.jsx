@@ -219,7 +219,7 @@ const ActionButton = styled.button`
   }
 `;
 
-const Orders = () => {
+const OrderAll = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [startDate, setStartDate] = useState('');
@@ -410,4 +410,4 @@ const Orders = () => {
   );
 };
 
-export default Orders;
+export default OrderAll;

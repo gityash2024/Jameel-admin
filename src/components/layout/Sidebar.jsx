@@ -205,9 +205,9 @@ const Sidebar = () => {
       submenu: [
         { label: 'Add Product', path: '/products/add' },
         { label: 'All Products', path: '/products/all' },
-        { label: 'Attributes', path: '/products/attributes' },
-        { label: 'Categories', path: '/products/categories' },
-        { label: 'Tags', path: '/products/tags' }
+        { label: 'Attributes', path: '/products/attribute' },
+        { label: 'Categories', path: '/products/category' },
+        { label: 'Tags', path: '/products/tgs' }
       ]
     },
     {
