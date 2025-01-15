@@ -7,17 +7,28 @@ const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
-          <div className="container mx-auto px-6 py-8">
-            <Outlet />
+    <div className="min-h-screen bg-gray-100">
+      {/* Main layout container */}
+      <div className="flex">
+        {/* Sidebar - fixed position */}
+        <div className="fixed left-0 z-40">
+          <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+        </div>
+
+        {/* Main content area */}
+        <div className="flex-1 ml-[280px]"> {/* Width matches sidebar width */}
+          {/* Header - fixed at top of content area */}
+          <div className="fixed top-0 right-0 left-[280px] z-30 bg-white">
+            <Header toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
           </div>
-        </main>
+
+          {/* Main content - scrollable area below header */}
+          <main className="pt-16 min-h-screen"> {/* Add padding-top to account for fixed header */}
+            <div className="p-6">
+              <Outlet />
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );
