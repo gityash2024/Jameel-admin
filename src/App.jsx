@@ -35,6 +35,8 @@ import Sales from './pages/Sales';
 import SaleDetails from './pages/SaleDetails';
 import SaleProductlist from './pages/SaleProductlist';
 import SaleOver from './pages/SaleOver';
+import BookInStoreAppointment from './pages/BookInStoreAppointment';
+import FindNearbyStore from './pages/FindNearbyStore';
 
 function App() {
   return (
@@ -73,6 +75,8 @@ function App() {
           <Route path="sales/details" element={<SaleDetails />} />
           <Route path="sales/productlist" element={<SaleProductlist />} />
           <Route path="sales/over" element={<SaleOver />} />
+          <Route path="book-in-store-appointment" element={<BookInStoreAppointment />} />
+          <Route path="find-nearby-store" element={<FindNearbyStore />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

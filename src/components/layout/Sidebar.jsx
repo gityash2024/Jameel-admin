@@ -19,7 +19,8 @@ import {
   Settings, 
   ChevronRight,
   ChevronDown,
-  Grid 
+  Grid ,
+  Calendar,MapPin
 } from 'lucide-react';
 
 const SidebarContainer = styled.div`
@@ -263,6 +264,16 @@ const Sidebar = () => {
       label: "FAQ's",
       icon: HelpCircle,
       path: '/faqs'
+    },
+    {
+       label: "Book-In-Appointment",
+       icon: Calendar,
+       path: '/book-in-store-appointment'
+    },
+    {
+        label: "Find-Near-Store",
+        icon: MapPin,
+        path: '/find-nearby-store'
     },
     {
       label: 'Settings',

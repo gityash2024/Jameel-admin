@@ -19,6 +19,7 @@
     "@nivo/bar": "^0.88.0",
     "@nivo/core": "^0.88.0",
     "@nivo/pie": "^0.88.0",
+    "@react-google-maps/api": "^2.20.5",
     "@reduxjs/toolkit": "^2.5.0",
     "axios": "^1.7.9",
     "formik": "^2.4.6",
