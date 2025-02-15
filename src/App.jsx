@@ -38,12 +38,14 @@ import SaleOver from './pages/SaleOver';
 import BookInStoreAppointment from './pages/BookInStoreAppointment';
 import FindNearbyStore from './pages/FindNearbyStore';
 import ViewDetails from './pages/ViewDetails';
+import Signup from './pages/Signup';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="products" element={<Products />} />
