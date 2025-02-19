@@ -194,7 +194,6 @@ const Sidebar = () => {
       icon: Users,
       path: '/users',
       submenu: [
-        // { label: 'Add User', path: '/users/add' },
         { label: 'All Users', path: '/users/all' },
         { label: 'Role', path: '/users/role' }
       ]
@@ -202,24 +201,16 @@ const Sidebar = () => {
     {
       label: 'Products',
       icon: CreditCard,
-      path: '/products',
-      submenu: [
-        { label: 'Add Product', path: '/products/add' },
-        { label: 'All Products', path: '/products/all' },
-        { label: 'Attributes', path: '/products/attribute' },
-        { label: 'Categories', path: '/products/category' },
-        { label: 'Tags', path: '/products/tgs' }
-      ]
-    },
+      path: '/products/all',
+   
+    },{ label: 'Categories', icon: ImageIcon,  path: '/products/category' },
+    { label: 'Tags', icon: ImageIcon,  path: '/products/tgs' }, 
     {
       label: 'Orders',
       icon: ShoppingBag,
-      path: '/orders',
-      submenu: [
-        { label: 'All Orders', path: '/orders/all' },
-        { label: 'Create Order', path: '/orders/create' }
-      ]
+      path: '/orders/all'
     },
+    
     {
       label: 'Media',
       icon: ImageIcon,
@@ -228,12 +219,7 @@ const Sidebar = () => {
     {
       label: 'Blog',
       icon: FileText,
-      path: '/blogs',
-      submenu: [
-        { label: 'All Blogs', path: '/blogs' },
-        { label: 'Categories', path: '/blogs/category' },
-        { label: 'Tags', path: '/blogs/tag' }
-      ]
+      path: '/blogs'
     },
     {
       label: 'Taxies',

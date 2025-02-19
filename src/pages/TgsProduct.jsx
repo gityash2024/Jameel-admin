@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import styled from 'styled-components';
-import { Download, Upload, Plus, Pencil, Trash2, X } from 'lucide-react';
+import styled, { keyframes } from 'styled-components';
+import { Plus, X, Package, Trash2, Pencil } from 'lucide-react';
 import { fetchTags, createTag, updateTag, deleteTag, updateTagStatus, bulkDeleteTags } from '../features/tags/tagSlice';
 import { toast } from 'react-hot-toast';
+
+const shimmer = keyframes`
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+`;
 
 const Container = styled.div`
   padding: 2rem;
@@ -14,29 +19,52 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+`;
 
-  h1 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1a202c;
-  }
+const Title = styled.h1`
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+`;
 
-  .button-group {
-    display: flex;
-    gap: 1rem;
-  }
+const Table = styled.table`
+  width: 100%;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-collapse: collapse;
+`;
+
+const Th = styled.th`
+  padding: 1rem;
+  text-align: left;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #4a5568;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+`;
+
+const Td = styled.td`
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #1a202c;
+  border-bottom: 1px solid #e2e8f0;
 `;
 
 const Button = styled.button`
+  padding: 0.5rem 1rem;
+  background: ${props => props.primary ? '#000' : 'white'};
+  color: ${props => props.primary ? 'white' : '#1a202c'};
+  border: 1px solid ${props => props.primary ? '#000' : '#e2e8f0'};
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  background: ${props => props.primary ? '#000' : 'white'};
-  color: ${props => props.primary ? 'white' : '#1a202c'};
-  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
 
   &:hover {
     background: ${props => props.primary ? '#1a1a1a' : '#f7fafc'};
@@ -48,91 +76,90 @@ const Button = styled.button`
   }
 `;
 
-const Controls = styled.div`
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+`;
+
+const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 `;
 
-const ShowEntries = styled.div`
+const ModalTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+`;
+
+const ModalText = styled.p`
+  color: #4a5568;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  padding: 0.5rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: #4a5568;
-  font-size: 0.875rem;
-
-  select {
-    padding: 0.25rem 0.5rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.375rem;
-    outline: none;
-  }
-`;
-
-const SearchInput = styled.input`
-  padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  outline: none;
-  width: 240px;
-
-  &:focus {
-    border-color: #4299e1;
-  }
-`;
-
-const Table = styled.table`
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: white;
-  border-radius: 0.5rem;
-  overflow: hidden;
-`;
-
-const Th = styled.th`
-  text-align: left;
-  padding: 1rem;
-  background: #f8fafc;
-  color: #4a5568;
-  font-weight: 500;
-  font-size: 0.875rem;
-  border-bottom: 1px solid #e2e8f0;
-  white-space: nowrap;
-
-  &:first-child {
-    padding-left: 1.5rem;
-  }
-
-  &:last-child {
-    padding-right: 1.5rem;
-  }
-`;
-
-const Td = styled.td`
-  padding: 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  color: #1a202c;
-  font-size: 0.875rem;
-
-  &:first-child {
-    padding-left: 1.5rem;
-  }
-
-  &:last-child {
-    padding-right: 1.5rem;
-  }
-`;
-
-const ActionButton = styled.button`
-  padding: 0.25rem;
-  color: ${props => props.delete ? '#EF4444' : '#3B82F6'};
-  opacity: 0.8;
-  transition: opacity 0.2s;
+  justify-content: center;
 
   &:hover {
-    opacity: 1;
+    color: #4a5568;
+  }
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4a5568;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    background: #f8fafc;
+    outline: none;
+
+    &:focus {
+      border-color: #4299e1;
+    }
+  }
+
+  textarea {
+    min-height: 100px;
+    resize: vertical;
   }
 `;
 
@@ -181,77 +208,6 @@ const ToggleSwitch = styled.label`
   }
 `;
 
-const CheckboxInput = styled.input`
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  cursor: pointer;
-`;
-
-const Modal = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-`;
-
-const ModalContent = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 0.5rem;
-  width: 100%;
-  max-width: 500px;
-`;
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-
-  h2 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1a202c;
-  }
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
-
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #4a5568;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  input, textarea {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-
-    &:focus {
-      outline: none;
-      border-color: #4299e1;
-    }
-  }
-
-  textarea {
-    min-height: 100px;
-    resize: vertical;
-  }
-`;
-
 const ButtonGroup = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -259,14 +215,77 @@ const ButtonGroup = styled.div`
   margin-top: 2rem;
 `;
 
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+`;
+
+const EmptyStateIcon = styled.div`
+  color: #a0aec0;
+  margin-bottom: 1rem;
+`;
+
+const EmptyStateText = styled.p`
+  color: #4a5568;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+`;
+
+const SkeletonRow = styled.tr`
+  td {
+    position: relative;
+    overflow: hidden;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #f0f0f0 25%, #f7f7f7 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: ${shimmer} 1.5s infinite;
+    }
+  }
+`;
+
+const SkeletonCell = styled.div`
+  height: 20px;
+  width: ${props => props.width || '100%'};
+  background: #f0f0f0;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+`;
+
+const SearchInput = styled.input`
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  outline: none;
+  width: 240px;
+  margin-bottom: 1rem;
+
+  &:focus {
+    border-color: #4299e1;
+  }
+`;
+
 const TagsProduct = () => {
   const dispatch = useDispatch();
   const { tags, loading } = useSelector((state) => state.tag);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [itemsPerPage, setItemsPerPage] = useState(15);
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [editingTag, setEditingTag] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -292,12 +311,30 @@ const TagsProduct = () => {
     setEditingTag(null);
   };
 
-  const handleToggleStatus = async (id, currentStatus) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      await dispatch(updateTagStatus({ id, status: !currentStatus })).unwrap();
-      toast.success('Tag status updated successfully');
+      const tagData = {
+        ...formData,
+        metaKeywords: formData.metaKeywords.split(',').map(k => k.trim()).filter(Boolean)
+      };
+
+      if (editingTag) {
+        await dispatch(updateTag({
+          id: editingTag._id,
+          tagData
+        })).unwrap();
+        toast.success('Tag updated successfully');
+        dispatch(fetchTags());
+      } else {
+        await dispatch(createTag(tagData)).unwrap();
+        toast.success('Tag created successfully');
+        dispatch(fetchTags());
+      }
+      setIsModalOpen(false);
+      resetForm();
     } catch (error) {
-      toast.error('Failed to update tag status');
+      toast.error(error.message || (editingTag ? 'Failed to update tag' : 'Failed to create tag'));
     }
   };
 
@@ -311,243 +348,304 @@ const TagsProduct = () => {
       metaKeywords: tag.metaKeywords?.join(', ') || '',
       isActive: tag.isActive
     });
-    setModalOpen(true);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this tag?')) {
-      try {
-        await dispatch(deleteTag(id)).unwrap();
-        toast.success('Tag deleted successfully');
-      } catch (error) {
-        toast.error('Failed to delete tag');
-      }
-    }
+  const handleStatusChange = (tag, newStatus) => {
+    setConfirmAction({
+      type: 'status',
+      tag,
+      newStatus,
+      message: `Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this tag?`
+    });
+    setIsConfirmModalOpen(true);
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedTags.length === 0) {
-      toast.error('Please select tags to delete');
-      return;
-    }
-
-    if (window.confirm(`Are you sure you want to delete ${selectedTags.length} tags?`)) {
-      try {
-        await dispatch(bulkDeleteTags(selectedTags)).unwrap();
-        setSelectedTags([]);
-        toast.success('Tags deleted successfully');
-      } catch (error) {
-        toast.error('Failed to delete tags');
-      }
-    }
+  const handleDeleteClick = (tag) => {
+    setConfirmAction({
+      type: 'delete',
+      tag,
+      message: 'Are you sure you want to delete this tag?'
+    });
+    setIsConfirmModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const tagData = {
-      ...formData,
-      metaKeywords: formData.metaKeywords.split(',').map(k => k.trim())
-    };
-
+  const handleConfirmAction = async () => {
     try {
-      if (editingTag) {
-        await dispatch(updateTag({ id: editingTag._id, tagData })).unwrap();
-        toast.success('Tag updated successfully');
-      } else {
-        await dispatch(createTag(tagData)).unwrap();
-        toast.success('Tag created successfully');
+      if (confirmAction.type === 'delete') {
+        await dispatch(deleteTag(confirmAction.tag._id)).unwrap();
+        toast.success('Tag deleted successfully');
+      } else if (confirmAction.type === 'status') {
+        await dispatch(updateTagStatus({
+          id: confirmAction.tag._id,
+          status: confirmAction.newStatus
+        })).unwrap();
+        toast.success('Tag status updated successfully');
       }
-      setModalOpen(false);
-      resetForm();
+      dispatch(fetchTags());
     } catch (error) {
-      toast.error(editingTag ? 'Failed to update tag' : 'Failed to create tag');
+      toast.error(error.message || 'Action failed');
     }
+    setIsConfirmModalOpen(false);
+    setConfirmAction(null);
   };
 
-  const handleSelectAll = (e) => {
-    setSelectedTags(e.target.checked ? tags.map(tag => tag._id) : []);
-  };
+  const renderSkeletonLoader = () => (
+    <Table>
+      <thead>
+        <tr>
+          <Th>Name</Th>
+          <Th>Description</Th>
+          <Th>Status</Th>
+          <Th>Actions</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {[1, 2, 3].map((index) => (
+          <SkeletonRow key={index}>
+            <Td><SkeletonCell width="150px" /></Td>
+            <Td><SkeletonCell /></Td>
+            <Td><SkeletonCell width="44px" /></Td>
+            <Td><SkeletonCell width="120px" /></Td>
+          </SkeletonRow>
+        ))}
+      </tbody>
+    </Table>
+  );
 
-  const handleSelectTag = (id) => {
-    setSelectedTags(prev => 
-      prev.includes(id) 
-        ? prev.filter(tagId => tagId !== id)
-        : [...prev, id]
+  const filteredTags = tags.filter(tag => 
+    tag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (tag.description && tag.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const renderContent = () => {
+    if (loading) {
+      return renderSkeletonLoader();
+    }
+
+    if (!Array.isArray(tags) || tags.length === 0) {
+      return (
+        <EmptyState>
+          <EmptyStateIcon>
+            <Package size={48} />
+          </EmptyStateIcon>
+          <EmptyStateText>No tags found</EmptyStateText>
+          <Button primary onClick={() => setIsModalOpen(true)}>
+            <Plus size={16} />
+            Add Your First Tag
+          </Button>
+        </EmptyState>
+      );
+    }
+
+    return (
+      <>
+        <SearchInput
+          type="text"
+          placeholder="Search tags..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        <Table>
+          <thead>
+            <tr>
+              <Th>Name</Th>
+              <Th>Description</Th>
+              <Th>Status</Th>
+              <Th>Actions</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTags.map((tag) => (
+              <tr key={tag._id}>
+                <Td>{tag.name}</Td>
+                <Td>{tag.description}</Td>
+                <Td>
+                  <ToggleSwitch>
+                    <input
+                      type="checkbox"
+                      checked={tag.isActive}
+                      onChange={(e) => handleStatusChange(tag, e.target.checked)}
+                    />
+                    <span className="slider" />
+                  </ToggleSwitch>
+                </Td>
+                <Td>
+                  <ButtonGroup>
+                    <Button onClick={() => handleEdit(tag)}>
+                      <Pencil size={16} />
+                      Edit
+                    </Button>
+                    <Button onClick={() => handleDeleteClick(tag)}>
+                      <Trash2 size={16} />
+                      Delete
+                    </Button>
+                  </ButtonGroup>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </>
     );
   };
-
-  const filteredTags = tags.filter(tag =>
-    tag.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <Container>
       <Header>
-        <h1>Tags</h1>
-        <div className="button-group">
-          <Button onClick={handleBulkDelete} disabled={selectedTags.length === 0}>
-            <Trash2 size={16} />
-            Delete Selected
-          </Button>
-          <Button onClick={() => { resetForm(); setModalOpen(true); }}>
-            <Plus size={16} />
-            Add Tag
-          </Button>
-        </div>
+        <Title>Tags</Title>
+        <Button primary onClick={() => setIsModalOpen(true)}>
+          <Plus size={16} />
+          Add Tag
+        </Button>
       </Header>
 
-      <Controls>
-        <ShowEntries>
-          Show:
-          <select 
-            value={itemsPerPage}
-            onChange={(e) => setItemsPerPage(Number(e.target.value))}
-          >
-            <option value={15}>15</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
-          items Per Page
-        </ShowEntries>
+      {renderContent()}
 
-        <SearchInput
-          type="text"
-          placeholder="Search..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </Controls>
-
-      <Table>
-        <thead>
-          <tr>
-            <Th style={{ width: '40px' }}>
-              <CheckboxInput
-                type="checkbox"
-                checked={selectedTags.length === tags.length}
-                onChange={handleSelectAll}
-              />
-            </Th>
-            <Th>Name</Th>
-            <Th>Created At</Th>
-            <Th>Status</Th>
-            <Th>Action</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredTags.map(tag => (
-            <tr key={tag._id}>
-              <Td>
-                <CheckboxInput
-                  type="checkbox"
-                  checked={selectedTags.includes(tag._id)}
-                  onChange={() => handleSelectTag(tag._id)}
-                />
-              </Td>
-              <Td>{tag.name}</Td>
-              <Td>{new Date(tag.createdAt).toLocaleString()}</Td>
-              <Td>
-                <ToggleSwitch>
-                  <input
-                    type="checkbox"
-                    checked={tag.isActive}
-                    onChange={() => handleToggleStatus(tag._id, tag.isActive)}
-                  />
-                  <span className="slider" />
-                </ToggleSwitch>
-              </Td>
-              <Td>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <ActionButton onClick={() => handleEdit(tag)}>
-                    <Pencil size={16} />
-                  </ActionButton>
-                  <ActionButton delete onClick={() => handleDelete(tag._id)}>
-                    <Trash2 size={16} />
-                  </ActionButton>
-                </div>
-              </Td>
-            </tr>
-          ))}
-        </tbody>
-      </Table>
-
-      {modalOpen && (
+      {isModalOpen && (
         <Modal>
-          <ModalContent>
-            <ModalHeader>
-              <h2>{editingTag ? 'Edit Tag' : 'Add Tag'}</h2>
-              <Button onClick={() => { setModalOpen(false); resetForm(); }}>
-                <X size={16} />
-              </Button>
-            </ModalHeader>
-            <form onSubmit={handleSubmit}>
-              <FormGroup>
-                <label>Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  required
-                />
-              </FormGroup>
-              <FormGroup>
-                <label>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                />
-              </FormGroup>
-              <FormGroup>
-                <label>Meta Title</label>
-                <input
-                  type="text"
-                  value={formData.metaTitle}
-                  onChange={(e) => setFormData(prev => ({ ...prev, metaTitle: e.target.value }))}
-                />
-              </FormGroup>
-              <FormGroup>
-                <label>Meta Description</label>
-                <textarea
-                  value={formData.metaDescription}
-                  onChange={(e) => setFormData(prev => ({ ...prev, metaDescription: e.target.value }))}
-                />
-              </FormGroup>
-              <FormGroup>
-                <label>Meta Keywords</label>
-                <input
-                  type="text"
-                  value={formData.metaKeywords}
-                  onChange={(e) => setFormData(prev => ({ ...prev, metaKeywords: e.target.value }))}
-                  placeholder="Enter keywords separated by commas"
-                />
-              </FormGroup>
-              <FormGroup>
-                <label>Status</label>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>
+              {editingTag ? 'Edit Tag' : 'Add Tag'}
+            </ModalTitle>
+            <CloseButton onClick={() => {
+              setIsModalOpen(false);
+              resetForm();
+            }}>
+              <X size={20} />
+            </CloseButton>
+          </ModalHeader>
+
+          <form onSubmit={handleSubmit}>
+            <FormGroup>
+              <label>Name</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  name: e.target.value
+                }))}
+                placeholder="Enter tag name"
+                required
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <label>Description</label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  description: e.target.value
+                }))}
+                placeholder="Enter tag description"
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <label>Meta Title</label>
+              <input
+                type="text"
+                value={formData.metaTitle}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  metaTitle: e.target.value
+                }))}
+                placeholder="Enter meta title"
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <label>Meta Description</label>
+              <textarea
+                value={formData.metaDescription}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  metaDescription: e.target.value
+                }))}
+                placeholder="Enter meta description"
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <label>Meta Keywords</label>
+              <input
+                type="text"
+                value={formData.metaKeywords}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  metaKeywords: e.target.value
+                }))}
+                placeholder="Enter keywords separated by commas"
+              />
+            </FormGroup>
+
+            <FormGroup>
+              <label>Status</label>
+              <div style={{ marginTop: '0.5rem' }}>
                 <ToggleSwitch>
                   <input
                     type="checkbox"
                     checked={formData.isActive}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      isActive: e.target.checked
+                    }))}
                   />
                   <span className="slider" />
                 </ToggleSwitch>
-              </FormGroup>
-              <ButtonGroup>
-                <Button type="button" onClick={() => { setModalOpen(false); resetForm(); }}>
-                  Cancel
-                </Button>
-                <Button type="submit" primary disabled={loading}>
-                  {loading ? 'Saving...' : editingTag ? 'Update' : 'Save'}
-                </Button>
-              </ButtonGroup>
-            </form>
-          </ModalContent>
-        </Modal>
-      )}
-    </Container>
-  );
+              </div>
+            </FormGroup>
+
+            <ButtonGroup>
+              <Button type="button" onClick={() => {
+                setIsModalOpen(false);
+                resetForm();
+              }}>
+                Cancel
+              </Button>
+              <Button type="submit" primary disabled={loading}>
+                {loading ? 'Saving...' : editingTag ? 'Update' : 'Save'}
+              </Button>
+            </ButtonGroup>
+          </form>
+        </ModalContent>
+      </Modal>
+    )}
+
+    {isConfirmModalOpen && (
+      <Modal>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Confirm Action</ModalTitle>
+            <CloseButton onClick={() => {
+              setIsConfirmModalOpen(false);
+              setConfirmAction(null);
+            }}>
+              <X size={20} />
+            </CloseButton>
+          </ModalHeader>
+
+          <ModalText>{confirmAction?.message}</ModalText>
+
+          <ButtonGroup>
+            <Button onClick={() => {
+              setIsConfirmModalOpen(false);
+              setConfirmAction(null);
+            }}>
+              Cancel
+            </Button>
+            <Button primary onClick={handleConfirmAction}>
+              Confirm
+            </Button>
+          </ButtonGroup>
+        </ModalContent>
+      </Modal>
+    )}
+  </Container>
+);
 };
 
 export default TagsProduct;

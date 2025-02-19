@@ -1,4 +1,3 @@
-// src/features/tags/tagSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { tagAPI } from '../../services/api';
 
@@ -29,8 +28,8 @@ export const updateTag = createAsyncThunk(
 export const deleteTag = createAsyncThunk(
   'tag/deleteTag',
   async (id) => {
-    await tagAPI.deleteTag(id);
-    return id;
+    const response = await tagAPI.deleteTag(id);
+    return { id, ...response };
   }
 );
 
@@ -46,7 +45,7 @@ export const bulkDeleteTags = createAsyncThunk(
   'tag/bulkDelete',
   async (ids) => {
     await tagAPI.bulkDeleteTags(ids);
-    return ids;
+    return { ids };
   }
 );
 
@@ -68,7 +67,6 @@ const tagSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Tags
       .addCase(fetchTags.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -82,7 +80,6 @@ const tagSlice = createSlice({
         state.error = action.error.message;
       })
 
-      // Create Tag
       .addCase(createTag.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -96,7 +93,6 @@ const tagSlice = createSlice({
         state.error = action.error.message;
       })
 
-      // Update Tag
       .addCase(updateTag.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -115,23 +111,19 @@ const tagSlice = createSlice({
         state.error = action.error.message;
       })
 
-      // Delete Tag
       .addCase(deleteTag.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(deleteTag.fulfilled, (state, action) => {
         state.loading = false;
-        state.tags = state.tags.filter(
-          (tag) => tag._id !== action.payload
-        );
+        state.tags = state.tags.filter((tag) => tag._id !== action.payload.id);
       })
       .addCase(deleteTag.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
 
-      // Update Tag Status
       .addCase(updateTagStatus.fulfilled, (state, action) => {
         const index = state.tags.findIndex(
           (tag) => tag._id === action.payload.id
@@ -141,10 +133,9 @@ const tagSlice = createSlice({
         }
       })
 
-      // Bulk Delete Tags
       .addCase(bulkDeleteTags.fulfilled, (state, action) => {
         state.tags = state.tags.filter(
-          (tag) => !action.payload.includes(tag._id)
+          (tag) => !action.payload.ids.includes(tag._id)
         );
       });
   }

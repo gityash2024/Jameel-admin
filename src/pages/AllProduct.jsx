@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Edit, Trash2, Eye, Download, Upload, Plus } from 'lucide-react';
 import ring from '../assets/ring.svg';
+import { useNavigate } from 'react-router-dom';
 
 const Container = styled.div`
   padding: 24px;
@@ -243,6 +244,7 @@ const AllProduct = () => {
   const [products, setProducts] = useState(mockProducts);
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate=useNavigate()
   const [filters, setFilters] = useState({
     type: '',
     category: '',
@@ -303,7 +305,7 @@ const AllProduct = () => {
             <Download size={16} />
             Export
           </Button>
-          <Button variant="primary">
+          <Button onClick={() => navigate('/products/add')} variant="primary">
             <Plus size={16} />
             Add Product
           </Button>

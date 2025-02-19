@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Plus, Eye } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Container = styled.div`
   padding: 2rem;
@@ -220,6 +221,7 @@ const ActionButton = styled.button`
 `;
 
 const OrderAll = () => {
+  const navigate=useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [startDate, setStartDate] = useState('');
@@ -260,6 +262,7 @@ const OrderAll = () => {
 
   const handleAddOrder = () => {
     console.log('Add order clicked');
+    navigate('/orders/create')
   };
 
   const filteredOrders = orders
