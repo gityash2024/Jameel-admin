@@ -1,5 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { ArrowLeft } from 'lucide-react';
+import { fetchRoles } from '../features/role/roleSlice';
+import { createUser } from '../features/users/userSlice';
+import toast from 'react-hot-toast';
 
 const Container = styled.div`
   padding: 40px;
@@ -12,6 +18,28 @@ const Title = styled.h1`
   font-weight: 600;
   color: #1a237e;
   margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const BackButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f1f1f1;
+  color: #333;
+  border: none;
+  
+  &:hover {
+    background: #e0e0e0;
+  }
 `;
 
 const Form = styled.form`
@@ -169,15 +197,10 @@ const countryCodes = [
   { code: '+971', country: 'UAE' },
 ];
 
-const roles = [
-  { id: 1, name: 'Admin' },
-  { id: 2, name: 'Manager' },
-  { id: 3, name: 'Consumer' },
-];
-
 const AddUser = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     countryCode: '+91',
@@ -189,11 +212,24 @@ const AddUser = () => {
 
   const [errors, setErrors] = useState({});
 
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { roles } = useSelector((state) => state.role);
+  const { loading, error } = useSelector((state) => state.user);
+
+  useEffect(() => {
+    dispatch(fetchRoles());
+  }, [dispatch]);
+
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
     }
 
     if (!formData.email.trim()) {
@@ -233,7 +269,6 @@ const AddUser = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
 
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -247,11 +282,21 @@ const AddUser = () => {
     
     if (validateForm()) {
       try {
-        // Here you would typically make an API call to save the user
-        console.log('Form submitted:', formData);
-        // Reset form after successful submission
+        const userData = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: `${formData.countryCode}${formData.phone}`,
+          password: formData.password,
+          role: formData.role,
+          isActive: formData.status
+        };
+
+        await dispatch(createUser(userData)).unwrap();
+        
         setFormData({
-          name: '',
+          firstName: '',
+          lastName: '',
           email: '',
           phone: '',
           countryCode: '+91',
@@ -260,27 +305,53 @@ const AddUser = () => {
           role: '',
           status: true
         });
+
+        toast.success('User created successfully');
+        navigate('/users/all');
       } catch (error) {
-        console.error('Error saving user:', error);
+        toast.error('Error creating user');
       }
     }
   };
 
+  if (loading) {
+    return 'Loading...';
+  }
+
   return (
     <Container>
-      <Title>Add User</Title>
+      <Title>
+        Add User
+        <BackButton onClick={() => navigate('/users/all')}>
+          <ArrowLeft size={16} />
+          Back
+        </BackButton>
+      </Title>
       <Form onSubmit={handleSubmit}>
         <FormGroup>
-          <Label>Name</Label>
+          <Label>First Name</Label>
           <Input
             type="text"
-            name="name"
-            value={formData.name}
+            name="firstName"
+            value={formData.firstName}
             onChange={handleChange}
-            placeholder="Enter Full Name"
-            error={errors.name}
+            placeholder="Enter First Name"
+            error={errors.firstName}
           />
-          {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
+          {errors.firstName && <ErrorMessage>{errors.firstName}</ErrorMessage>}
+        </FormGroup>
+
+        <FormGroup>
+          <Label>Last Name</Label>
+          <Input
+            type="text"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            placeholder="Enter Last Name"
+            error={errors.lastName}
+          />
+          {errors.lastName && <ErrorMessage>{errors.lastName}</ErrorMessage>}
         </FormGroup>
 
         <FormGroup>
@@ -358,7 +429,7 @@ const AddUser = () => {
           >
             <option value="">Select Role</option>
             {roles.map(role => (
-              <option key={role.id} value={role.name}>
+              <option key={role._id} value={role.name}>
                 {role.name}
               </option>
             ))}
@@ -381,8 +452,8 @@ const AddUser = () => {
           </StatusGroup>
         </FormGroup>
 
-        <Button type="submit">
-          Save User
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Saving...' : 'Save User'}
         </Button>
       </Form>
     </Container>

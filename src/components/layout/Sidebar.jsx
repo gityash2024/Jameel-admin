@@ -194,7 +194,7 @@ const Sidebar = () => {
       icon: Users,
       path: '/users',
       submenu: [
-        { label: 'Add User', path: '/users/add' },
+        // { label: 'Add User', path: '/users/add' },
         { label: 'All Users', path: '/users/all' },
         { label: 'Role', path: '/users/role' }
       ]

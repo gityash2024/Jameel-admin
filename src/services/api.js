@@ -68,12 +68,19 @@ export const authAPI = {
   resetPassword: (token, data) => http.post(`/auth/reset-password/${token}`, data),
 };
 
-// User management API endpoints
-export const userAPI = {
-  getAllUsers: () => http.get('/auth/users'),
-  getUser: (id) => http.get(`/auth/users/${id}`),
-  updateUser: (id, data) => http.put(`/auth/users/${id}`, data),
-  deleteUser: (id) => http.delete(`/auth/users/${id}`),
-};
 
+
+export const userAPI = {
+  getAllUsers: () => http.get('/users'),
+  getUser: (id) => http.get(`/users/${id}`),
+  createUser: (data) => http.post('/auth/register', data),
+  updateUser: (id, data) => http.put(`/users/${id}`, data),
+  deleteUser: (id) => http.delete(`/users/${id}`),
+};
+export const roleAPI = {
+  getAllRoles: () => http.get('/roles'),
+  createRole: (data) => http.post('/roles', data),
+  updateRole: (id, data) => http.put(`/roles/${id}`, data),
+  deleteRole: (id) => http.delete(`/roles/${id}`)
+};
 export default http;
