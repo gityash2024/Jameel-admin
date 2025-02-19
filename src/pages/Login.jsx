@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
+import { authAPI } from '../services/api';
+import { setUser } from '../features/auth/authSlice';
+import toast from 'react-hot-toast';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -146,45 +150,10 @@ const LoginButton = styled.button`
   &:active {
     transform: translateY(0);
   }
-`;
 
-const Divider = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 20px 0;
-  
-  &::before, &::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  span {
-    padding: 0 10px;
-    color: #718096;
-    font-size: 14px;
-  }
-`;
-
-const SocialButton = styled.button`
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  background: white;
-  color: #4a5568;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  &:hover {
-    background: #f8fafc;
-    border-color: #cbd5e0;
+  &:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
   }
 `;
 
@@ -207,19 +176,46 @@ const RegisterPrompt = styled.p`
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   });
+  
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Add your login logic here
-  };
+  // Update the handleSubmit function in your LoginPage component
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  
+  try {
+    const response = await authAPI.login(formData);
+    const { token, data: { user } } = response.data;
+    
+    // Check if user has admin role
+    const isAdmin = 
+      (typeof user.role === 'object' && user.role?.name === 'admin') ||
+      (typeof user.role === 'string' && user.role === '67b5a1037e3966fd9456afca');
+    
+    if (!isAdmin) {
+      toast.error('Access denied. Admin privileges required.');
+      setLoading(false);
+      return;
+    }
 
+    localStorage.setItem('token', token);
+    dispatch(setUser(user));
+    navigate('/', { replace: true });
+  } catch (error) {
+    const message = error.response?.data?.message || 'Login failed';
+    toast.error(message);
+  } finally {
+    setLoading(false);
+  }
+};
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -231,7 +227,7 @@ const LoginPage = () => {
   return (
     <Container>
       <LoginCard>
-        <Title>Welcome Back</Title>
+        <Title>Admin Login</Title>
         <Form onSubmit={handleSubmit}>
           <FormGroup>
             <Input
@@ -278,18 +274,10 @@ const LoginPage = () => {
             </ForgotPassword>
           </RememberMeRow>
 
-          <LoginButton type="submit">
-            Sign In
+          <LoginButton type="submit" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
           </LoginButton>
         </Form>
-
-        {/* <Divider>
-          <span>OR</span>
-        </Divider>
-
-        <SocialButton onClick={() => console.log('Google login')}>
-          Continue with Google
-        </SocialButton> */}
 
         <RegisterPrompt>
           Don't have an account?{' '}

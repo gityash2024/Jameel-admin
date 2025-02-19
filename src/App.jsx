@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import AdminLayout from './components/layout/AdminLayout';
-
-// Pages
+import AuthGuard from './components/common/AuthGuard';
 import Dashboard from './pages/Dashboard';
 import User from './pages/User';
 import AddUser from './pages/AddUser';
@@ -43,10 +43,22 @@ import Signup from './pages/Signup';
 function App() {
   return (
     <BrowserRouter>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#333',
+            color: '#fff',
+          },
+        }}
+      />
+      
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/" element={<AdminLayout />}>
+        
+        <Route path="/" element={<AuthGuard><AdminLayout /></AuthGuard>}>
           <Route index element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="products/add" element={<AddProduct />} />

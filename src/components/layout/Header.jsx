@@ -1,19 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { 
-  Search, 
-  Globe, 
-  Bell, 
-  Moon, 
-  ChevronDown, 
-  Maximize2, 
-  Languages,
-  User,
-  Settings,
-  LogOut,
-  UserCircle,
-  LayoutDashboard 
-} from 'lucide-react';
+import { Search, Bell, ChevronDown, LogOut, User, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const HeaderContainer = styled.header`
   padding: 0.75rem 1rem;
@@ -58,100 +46,36 @@ const SearchContainer = styled.div`
   }
 `;
 
+const SearchSuggestions = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  margin-top: 0.25rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 50;
+`;
+
+const SuggestionItem = styled.div`
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #4b5563;
+
+  &:hover {
+    background: #f3f4f6;
+  }
+`;
+
 const RightSection = styled.div`
   display: flex;
   align-items: center;
   gap: 1.25rem;
-`;
-
-const QuickLinks = styled.div`
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  color: #4b5563;
-  
-  span {
-    font-size: 0.875rem;
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-    transition: transform 0.2s;
-    ${props => props.isOpen && 'transform: rotate(180deg);'}
-  }
-`;
-
-const Dropdown = styled.div`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 0.5rem;
-  background: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  min-width: 200px;
-  z-index: 50;
-
-  .dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    color: #4b5563;
-    transition: all 0.2s;
-    
-    &:hover {
-      background: #f3f4f6;
-      color: #111827;
-    }
-
-    svg {
-      width: 18px;
-      height: 18px;
-    }
-  }
-
-  .divider {
-    height: 1px;
-    background: #e5e7eb;
-    margin: 0.5rem 0;
-  }
-`;
-
-const IconButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem;
-  color: #4b5563;
-  transition: all 0.2s;
-
-  &:hover {
-    color: #374151;
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-`;
-
-const PosButton = styled.button`
-  background: #111827;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #1f2937;
-  }
 `;
 
 const NotificationBadge = styled.div`
@@ -171,6 +95,85 @@ const NotificationBadge = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+`;
+
+const NotificationModal = styled.div`
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -10px;
+  width: 320px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+`;
+
+const NotificationHeader = styled.div`
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+`;
+
+const NotificationList = styled.div`
+  max-height: 400px;
+  overflow-y: auto;
+`;
+
+const NotificationItem = styled.div`
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #f9fafb;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const NotificationTitle = styled.div`
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 4px;
+`;
+
+const NotificationTime = styled.div`
+  font-size: 12px;
+  color: #6b7280;
+`;
+
+const IconButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  color: #4b5563;
+  transition: all 0.2s;
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    color: #374151;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
   }
 `;
 
@@ -198,9 +201,42 @@ const AdminSection = styled.div`
   }
 `;
 
+const Dropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  z-index: 50;
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: #4b5563;
+    transition: all 0.2s;
+    cursor: pointer;
+    
+    &:hover {
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+`;
+
 const UserAvatar = styled.div`
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   background: #f3f4f6;
   border-radius: 4px;
   display: flex;
@@ -213,100 +249,80 @@ const UserAvatar = styled.div`
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [isQuickLinksOpen, setIsQuickLinksOpen] = useState(false);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const navigate = useNavigate();
 
-  // Quick Links Data
-  const quickLinksData = [
-    { 
-      id: 'dashboard', 
-      label: 'Dashboard', 
-      icon: LayoutDashboard, 
-      onClick: () => console.log('Dashboard clicked') 
+  const menuItems = [
+    'Dashboard', 'Users', 'Products', 'Orders', 'Media', 'Blog', 'Taxies',
+    'Shipping', 'Coupons', 'Currencies', 'Review', "FAQ's", 'Book-In-Appointment',
+    'Find-Near-Store', 'Settings'
+  ];
+
+  const mockNotifications = [
+    {
+      id: 1,
+      title: 'New order received #1234',
+      time: '5 minutes ago'
     },
-    { 
-      id: 'settings', 
-      label: 'Settings', 
-      icon: Settings, 
-      onClick: () => console.log('Settings clicked') 
+    {
+      id: 2,
+      title: 'Payment confirmed for order #5678',
+      time: '1 hour ago'
     },
-    { 
-      id: 'profile', 
-      label: 'Profile', 
-      icon: UserCircle, 
-      onClick: () => console.log('Profile clicked') 
+    {
+      id: 3,
+      title: 'New user registration',
+      time: '2 hours ago'
+    },
+    {
+      id: 4,
+      title: 'Stock alert: Product XYZ running low',
+      time: '3 hours ago'
+    },
+    {
+      id: 5,
+      title: 'System update completed',
+      time: '5 hours ago'
     }
   ];
 
-  // Admin Menu Data
-  const adminMenuData = [
-    { 
-      id: 'profile', 
-      label: 'View Profile', 
-      icon: UserCircle, 
-      onClick: () => console.log('Profile clicked') 
-    },
-    { 
-      id: 'settings', 
-      label: 'Settings', 
-      icon: Settings, 
-      onClick: () => console.log('Settings clicked') 
-    },
-    { 
-      id: 'logout', 
-      label: 'Logout', 
-      icon: LogOut, 
-      onClick: () => console.log('Logout clicked') 
-    }
-  ];
-
-  // Navigation Items
-  const navItems = [
-    { 
-      icon: Globe, 
-      onClick: () => console.log('Globe clicked'),
-      label: 'Global',
-      id: 'globe'
-    },
-    { 
-      icon: Maximize2, 
-      onClick: () => console.log('Maximize clicked'),
-      label: 'Maximize',
-      id: 'maximize'
-    },
-    { 
-      icon: Languages, 
-      onClick: () => console.log('Language clicked'),
-      label: 'Language',
-      id: 'language'
-    },
-    { 
-      icon: Bell, 
-      onClick: () => console.log('Notifications clicked'),
-      label: 'Notifications',
-      id: 'notifications',
-      badge: 5
-    },
-    { 
-      icon: Moon, 
-      onClick: () => console.log('Theme clicked'),
-      label: 'Theme',
-      id: 'theme'
-    }
-  ];
+  const filteredItems = menuItems.filter(item =>
+    item.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    console.log('Search query:', query);
+    setShowSuggestions(query.length > 0);
   };
 
-  // Close dropdowns when clicking outside
+  const handleSuggestionClick = (item) => {
+    setSearchQuery('');
+    setShowSuggestions(false);
+    const path = '/' + item.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-');
+    navigate(path);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  const handleNotificationClick = (notification) => {
+    setShowNotifications(false);
+    console.log('Notification clicked:', notification);
+  };
+
   React.useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.quick-links') && !event.target.closest('.admin-section')) {
-        setIsQuickLinksOpen(false);
+      if (!event.target.closest('.admin-section') && 
+          !event.target.closest('.search-container') && 
+          !event.target.closest('.notification-section')) {
         setIsAdminMenuOpen(false);
+        setShowSuggestions(false);
+        setShowNotifications(false);
       }
     };
 
@@ -316,7 +332,7 @@ const Header = () => {
 
   return (
     <HeaderContainer>
-      <SearchContainer>
+      <SearchContainer className="search-container">
         <input
           type="text"
           placeholder="Search..."
@@ -324,62 +340,59 @@ const Header = () => {
           onChange={handleSearchChange}
         />
         <Search size={16} />
+        {showSuggestions && filteredItems.length > 0 && (
+          <SearchSuggestions>
+            {filteredItems.map((item, index) => (
+              <SuggestionItem
+                key={index}
+                onClick={() => handleSuggestionClick(item)}
+              >
+                {item}
+              </SuggestionItem>
+            ))}
+          </SearchSuggestions>
+        )}
       </SearchContainer>
 
       <RightSection>
-        <QuickLinks 
-          className="quick-links"
-          isOpen={isQuickLinksOpen}
-          onClick={() => setIsQuickLinksOpen(!isQuickLinksOpen)}
-        >
-          <span>Quick Links</span>
-          <ChevronDown size={16} />
-          {isQuickLinksOpen && (
-            <Dropdown>
-              {quickLinksData.map((link, index) => (
-                <React.Fragment key={link.id}>
-                  <div className="dropdown-item" onClick={link.onClick}>
-                    <link.icon size={18} />
-                    {link.label}
-                  </div>
-                  {index < quickLinksData.length - 1 && <div className="divider" />}
-                </React.Fragment>
-              ))}
-            </Dropdown>
+        <NotificationBadge className="notification-section">
+          <IconButton 
+            title="Notifications"
+            onClick={() => setShowNotifications(!showNotifications)}
+          >
+            <Bell size={20} />
+          </IconButton>
+          <span>5</span>
+          {showNotifications && (
+            <NotificationModal>
+              <NotificationHeader>
+                <h3>Notifications</h3>
+                <IconButton onClick={() => setShowNotifications(false)}>
+                  <X size={16} />
+                </IconButton>
+              </NotificationHeader>
+              <NotificationList>
+                {mockNotifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <NotificationTitle>{notification.title}</NotificationTitle>
+                    <NotificationTime>{notification.time}</NotificationTime>
+                  </NotificationItem>
+                ))}
+              </NotificationList>
+            </NotificationModal>
           )}
-        </QuickLinks>
-
-        <PosButton onClick={() => console.log('POS clicked')}>
-          POS
-        </PosButton>
-
-        {navItems.map((item) => (
-          item.id === 'notifications' ? (
-            <NotificationBadge key={item.id}>
-              <IconButton onClick={item.onClick} title={item.label}>
-                <item.icon size={20} />
-              </IconButton>
-              {item.badge > 0 && <span>{item.badge}</span>}
-            </NotificationBadge>
-          ) : (
-            <IconButton 
-              key={item.id}
-              onClick={item.onClick}
-              title={item.label}
-            >
-              <item.icon size={20} />
-            </IconButton>
-          )
-        ))}
-
-        <IconButton>
-          <UserAvatar>A</UserAvatar>
-        </IconButton>
+        </NotificationBadge>
 
         <AdminSection 
           className="admin-section"
           onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
         >
+          <UserAvatar>
+            <User size={18} />
+          </UserAvatar>
           <div className="admin-text">
             <span className="title">Admin</span>
             <span className="subtitle">Admin</span>
@@ -387,15 +400,10 @@ const Header = () => {
           <ChevronDown size={16} />
           {isAdminMenuOpen && (
             <Dropdown>
-              {adminMenuData.map((item, index) => (
-                <React.Fragment key={item.id}>
-                  <div className="dropdown-item" onClick={item.onClick}>
-                    <item.icon size={18} />
-                    {item.label}
-                  </div>
-                  {index < adminMenuData.length - 1 && <div className="divider" />}
-                </React.Fragment>
-              ))}
+              <div className="dropdown-item" onClick={handleLogout}>
+                <LogOut size={18} />
+                Logout
+              </div>
             </Dropdown>
           )}
         </AdminSection>

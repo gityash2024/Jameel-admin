@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
+import { authAPI } from '../services/api';
+import { setUser } from '../features/auth/authSlice';
+import toast from 'react-hot-toast';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -224,46 +228,6 @@ const SignupButton = styled.button`
   }
 `;
 
-const Divider = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 24px 0;
-  
-  &::before, &::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  span {
-    padding: 0 10px;
-    color: #718096;
-    font-size: 14px;
-  }
-`;
-
-const SocialButton = styled.button`
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 10px;
-  background: white;
-  color: #4a5568;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  &:hover {
-    background: #f8fafc;
-    border-color: #cbd5e0;
-  }
-`;
-
 const LoginPrompt = styled.p`
   text-align: center;
   margin-top: 24px;
@@ -283,7 +247,9 @@ const LoginPrompt = styled.p`
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -319,7 +285,6 @@ const SignupPage = () => {
       setPasswordStrength(validatePassword(value));
     }
 
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -367,15 +332,32 @@ const SignupPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      console.log('Form submitted:', formData);
-      // Add your signup logic here
+      setLoading(true);
+      try {
+        const signupData = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          role: 'admin'
+        };
+  
+        await authAPI.register(signupData);
+        toast.success('Successfully registered! Please login.');
+        navigate('/login');
+      } catch (error) {
+        const message = error.response?.data?.message || 'Registration failed';
+        toast.error(message);
+      } finally {
+        setLoading(false);
+      }
     }
   };
-
   return (
     <Container>
       <SignupCard>
@@ -384,8 +366,8 @@ const SignupPage = () => {
           Back
         </BackButton>
 
-        <Title>Create your account</Title>
-        <Subtitle>Start your journey with us today</Subtitle>
+        <Title>Create Admin Account</Title>
+        <Subtitle>Start managing your admin panel</Subtitle>
 
         <Form onSubmit={handleSubmit}>
           <FormRow>
@@ -488,18 +470,10 @@ const SignupPage = () => {
             {errors.agreeToTerms && <ErrorMessage>{errors.agreeToTerms}</ErrorMessage>}
           </TermsCheck>
 
-          <SignupButton type="submit">
-            Create Account
+          <SignupButton type="submit" disabled={loading}>
+            {loading ? 'Creating Account...' : 'Create Account'}
           </SignupButton>
         </Form>
-{/* 
-        <Divider>
-          <span>OR</span>
-        </Divider>
-
-        <SocialButton onClick={() => console.log('Google signup')}>
-          Sign up with Google
-        </SocialButton> */}
 
         <LoginPrompt>
           Already have an account? <a href="/login">Sign in</a>
