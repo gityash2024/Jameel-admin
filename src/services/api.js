@@ -109,4 +109,22 @@
     updateRole: (id, data) => http.put(`/roles/${id}`, data),
     deleteRole: (id) => http.delete(`/roles/${id}`)
   };
+  export const blogAPI = {
+    getAllBlogs: (params) => http.get('/blogs', { params }),
+    getBlog: (id) => http.get(`/blogs/${id}`),
+    createBlog: (data) => http.post('/blogs', data),
+    updateBlog: (id, data) => http.put(`/blogs/${id}`, data),
+    deleteBlog: (id) => http.delete(`/blogs/${id}`),
+    updateBlogStatus: (id, status) => http.put(`/blogs/${id}`, { status }),
+    getBlogCategories: () => http.get('/blogs/categories'),
+    getBlogTags: () => http.get('/blogs/tags'),
+  };
+
+  export const mediaAPI = {
+    getAllMedia: (params) => http.get('/media', { params }),
+    getMedia: (id) => http.get(`/media/${id}`),
+    uploadMedia: (data) => http.post('/media', data),
+    updateMedia: (id, data) => http.put(`/media/${id}`, data),
+    deleteMedia: (id) => http.delete(`/media/${id}`),
+  }
   export default http;

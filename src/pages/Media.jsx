@@ -1,42 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchMedia, uploadMedia, deleteMedia } from '../features/media/mediaSlice';
 import styled from 'styled-components';
-import { Plus, ArrowDown, ArrowUp, Search } from 'lucide-react';
-import ZipFile from '../assets/ZipFile.svg';
-import medai_1 from '../assets/medai_1.svg';
-import medai_2 from '../assets/medai_2.svg';
-import medai_3 from '../assets/medai_3.svg';
-import medai_4 from '../assets/medai_4.svg';
-import medai_5 from '../assets/medai_5.svg';
-import medai_6 from '../assets/medai_6.svg';
-import medai_7 from '../assets/medai_7.svg';
-import medai_8 from '../assets/medai_8.svg';
-import medai_9 from '../assets/medai_9.svg';
-import medai_10 from '../assets/medai_10.svg';
-import medai_11 from '../assets/medai_11.svg';
-import medai_12 from '../assets/medai_12.svg';
-import medai_13 from '../assets/medai_13.svg';
-import medai_14 from '../assets/medai_14.svg';
-import medai_15 from '../assets/medai_15.svg';
-import medai_16 from '../assets/medai_16.svg';
-import medai_17 from '../assets/medai_17.svg';
-import medai_18 from '../assets/medai_18.svg';
-import medai_19 from '../assets/medai_19.svg';
-import medai_20 from '../assets/medai_20.svg';
-import medai_21 from '../assets/medai_21.svg';
-import medai_22 from '../assets/medai_22.svg';
-import medai_23 from '../assets/medai_23.svg';
-import medai_24 from '../assets/medai_24.svg';
-import medai_25 from '../assets/medai_25.svg';
-import medai_26 from '../assets/medai_26.svg';
-import medai_27 from '../assets/medai_27.svg';
-import medai_28 from '../assets/medai_28.svg';
-import medai_29 from '../assets/medai_29.svg';
-import medai_30 from '../assets/medai_30.svg';
-import medai_31 from '../assets/medai_31.svg';
-import medai_32 from '../assets/medai_32.svg';
-import medai_33 from '../assets/medai_33.svg';
-import medai_34 from '../assets/medai_34.svg';
-import medai_35 from '../assets/medai_35.svg';
+import { Plus, X, Trash2, Download, FileImage } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 const Container = styled.div`
   padding: 2rem;
@@ -48,7 +16,6 @@ const Header = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-
   h1 {
     font-size: 1.25rem;
     font-weight: 600;
@@ -65,7 +32,6 @@ const AddButton = styled.button`
   border-radius: 0.375rem;
   background: white;
   font-size: 0.875rem;
-
   &:hover {
     background: #f7fafc;
   }
@@ -85,17 +51,15 @@ const SearchInput = styled.input`
   outline: none;
   width: 300px;
   font-size: 0.875rem;
-
   &::placeholder {
     color: #a0aec0;
   }
-
   &:focus {
     border-color: #4299e1;
   }
 `;
 
-const SortSelect = styled.select`
+const FilterSelect = styled.select`
   padding: 0.75rem 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 0.375rem;
@@ -103,7 +67,6 @@ const SortSelect = styled.select`
   background: white;
   min-width: 150px;
   cursor: pointer;
-
   &:focus {
     border-color: #4299e1;
   }
@@ -111,43 +74,163 @@ const SortSelect = styled.select`
 
 const MediaGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1rem;
-  margin-bottom: 2rem;
 `;
 
-const MediaItem = styled.div`
+const NoMediaContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  text-align: center;
+`;
+
+const MediaCard = styled.div`
   background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
   overflow: hidden;
-  cursor: pointer;
-  aspect-ratio: 1;
-  padding: 0.5rem;
-  border: 1px solid #e2e8f0;
+  position: relative;
+  transition: all 0.2s;
+  &:hover {
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+`;
+
+const MediaThumbnail = styled.img`
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+`;
+
+const MediaInfo = styled.div`
+  padding: 1rem;
+`;
+
+const MediaName = styled.h3`
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const MediaMeta = styled.p`
+  font-size: 0.75rem;
+  color: #718096;
+`;
+
+const ActionButtons = styled.div`
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const ActionButton = styled.button`
+  background: rgba(255,255,255,0.8);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: all 0.2s;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+  &:hover {
+    background: rgba(255,255,255,1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
+`;
 
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  border-radius: 0.5rem;
+  width: 500px;
+  padding: 2rem;
+  position: relative;
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+`;
+
+const ModalTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+`;
+
+const ModalCloseButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1rem;
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+  input, select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+  }
+`;
+
+const FileInput = styled.input`
+  display: none;
+`;
+
+const FileInputLabel = styled.label`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  border: 2px dashed #e2e8f0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
   &:hover {
     border-color: #4299e1;
   }
+`;
 
-  .dimensions {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: #3B82F6;
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
+const SubmitButton = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  background: #1a202c;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
@@ -157,232 +240,285 @@ const Pagination = styled.div`
   align-items: center;
   gap: 0.5rem;
   margin-top: 2rem;
-
   button {
-    min-width: 2rem;
-    height: 2rem;
-    padding: 0 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 0.5rem 1rem;
     border: 1px solid #e2e8f0;
     background: white;
     border-radius: 0.375rem;
-    color: #4a5568;
-    font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover:not(.active, :disabled) {
-      background: #f7fafc;
-    }
-
     &.active {
       background: #1a202c;
       color: white;
-      border-color: #1a202c;
     }
-
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
   }
-
-  .dots {
-    color: #4a5568;
-  }
 `;
 
-
 const Media = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 30;
-
-
-  // Create an array of your imported media
-  const allMedia = [
-    { id: 1, src: ZipFile, type: 'svg', },
-    { id: 2, src: ZipFile, type: 'svg', },
-    { id: 3, src: Container, type: 'png',},
-    { id: 4, src: medai_1, type: 'svg',},
-    { id: 5, src: medai_2, type: 'svg', },
-    { id: 6, src: medai_3, type: 'svg', },
-    { id: 7, src: medai_4, type: 'svg'},
-    { id: 8, src: medai_5, type: 'svg'},
-    { id: 9, src: medai_6, type: 'svg'},
-    { id: 10, src: medai_7, type: 'svg' },
-    { id: 11, src: medai_8, type: 'svg'},
-    { id: 12, src: medai_9, type: 'svg'},
-    { id: 13, src: medai_10, type: 'svg' },
-    { id: 14, src: medai_11, type: 'svg' },
-    { id: 15, src: medai_12, type: 'svg'},
-    { id: 16, src: medai_13, type: 'svg'},
-    { id: 17, src: medai_14, type: 'svg'},
-    { id: 18, src: medai_15, type: 'svg' },
-    { id: 19, src: medai_16, type: 'svg'},
-    { id: 20, src: medai_17, type: 'svg'},
-    { id: 21, src: medai_18, type: 'svg'},
-    { id: 22, src: medai_19, type: 'svg'},
-    { id: 23, src: medai_20, type: 'svg'},
-    { id: 24, src: medai_21, type: 'svg'},
-    { id: 25, src: medai_22, type: 'svg'},
-    { id: 26, src: medai_23, type: 'svg' },
-    { id: 27, src: medai_24, type: 'svg'},
-    { id: 28, src: medai_25, type: 'svg' },
-    { id: 29, src: medai_26, type: 'svg'},
-    { id: 30, src: medai_27, type: 'svg'},
-    { id: 31, src: medai_28, type: 'svg'},
-    { id: 32, src: medai_29, type: 'svg'},
-    { id: 33, src: medai_30, type: 'svg'},
-    { id: 34, src: medai_31, type: 'svg'},
-    { id: 35, src: medai_32, type: 'svg'},
-    { id: 36, src: medai_33, type: 'svg'},
-    { id: 37, src: medai_34, type: 'svg'},
-    { id: 38, src: medai_35, type: 'svg'},
-  ];
-
-  const filteredMedia = allMedia.filter(media => 
-    media.type.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const sortedMedia = [...filteredMedia].sort((a, b) => {
-    if (sortOrder === 'desc') {
-      return b.id - a.id;
-    }
-    return a.id - b.id;
-  });
+  const dispatch = useDispatch();
+  const { media, loading, total, currentPage, totalPages } = useSelector((state) => state.media);
   
-  const totalPages = Math.ceil(filteredMedia.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentMedia = filteredMedia.slice(indexOfFirstItem, indexOfLastItem);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFileUrl, setSelectedFileUrl] = useState('');
+  const [mediaForm, setMediaForm] = useState({
+    folder: 'general',
+    alt: '',
+    caption: '',
+    type: 'image'
+  });
+  const [filters, setFilters] = useState({
+    search: '',
+    type: '',
+    folder: ''
+  });
 
-  const renderPaginationButtons = () => {
-    const buttons = [];
-    const maxVisibleButtons = 5;
+  useEffect(() => {
+    dispatch(fetchMedia({
+      page: currentPage,
+      ...filters
+    }));
+  }, [dispatch, currentPage, filters]);
 
-    if (totalPages <= maxVisibleButtons) {
-      for (let i = 1; i <= totalPages; i++) {
-        buttons.push(
-          <button
-            key={i}
-            onClick={() => setCurrentPage(i)}
-            className={currentPage === i ? 'active' : ''}
-          >
-            {i}
-          </button>
-        );
-      }
-    } else {
-      buttons.push(
-        <button
-          key="prev"
-          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-          disabled={currentPage === 1}
-        >
-          ←
-        </button>
-      );
+  const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
 
-      if (currentPage > 3) {
-        buttons.push(
-          <button key={1} onClick={() => setCurrentPage(1)}>1</button>,
-          <span key="dots1" className="dots">...</span>
-        );
-      }
-
-      for (let i = Math.max(1, currentPage - 1); i <= Math.min(totalPages, currentPage + 1); i++) {
-        buttons.push(
-          <button
-            key={i}
-            onClick={() => setCurrentPage(i)}
-            className={currentPage === i ? 'active' : ''}
-          >
-            {i}
-          </button>
-        );
-      }
-
-      if (currentPage < totalPages - 2) {
-        buttons.push(
-          <span key="dots2" className="dots">...</span>,
-          <button key={totalPages} onClick={() => setCurrentPage(totalPages)}>{totalPages}</button>
-        );
-      }
-
-      buttons.push(
-        <button
-          key="next"
-          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-          disabled={currentPage === totalPages}
-        >
-          →
-        </button>
-      );
+  const handleSubmit = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a file');
+      return;
     }
 
-    return buttons;
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      
+      const response = await axios.post(
+        "https://chirag-backend.onrender.com/api/files/upload",
+        formData
+      );
+
+      if (response.data?.fileUrl) {
+        await dispatch(uploadMedia({
+          url: response.data.fileUrl,
+          type: mediaForm.type,
+          folder: mediaForm.folder,
+          alt: mediaForm.alt,
+          caption: mediaForm.caption
+        })).unwrap();
+
+        setIsUploadModalOpen(false);
+        setSelectedFile(null);
+        setSelectedFileUrl('');
+        setMediaForm({
+          folder: 'general',
+          alt: '',
+          caption: '',
+          type: 'image'
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to upload file');
+    }
   };
 
-
-  // Handle file upload
-  const handleAddMedia = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.multiple = true;
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const files = e.target.files;
-      console.log('Files to upload:', files);
-    };
-    input.click();
+  const handleDeleteMedia = async (id) => {
+    try {
+      await dispatch(deleteMedia(id)).unwrap();
+    } catch (error) {
+      toast.error('Failed to delete media');
+    }
   };
 
+  const renderUploadModal = () => (
+    <Modal>
+      <ModalContent>
+        <ModalHeader>
+          <ModalTitle>Upload Media</ModalTitle>
+          <ModalCloseButton onClick={() => setIsUploadModalOpen(false)}>
+            <X size={24} />
+          </ModalCloseButton>
+        </ModalHeader>
 
+        <FileInput
+          type="file"
+          id="file-upload"
+          onChange={handleFileSelect}
+          accept="image/*,video/*,application/pdf"
+        />
+        <FileInputLabel htmlFor="file-upload">
+          <Plus size={24} />
+          <span style={{ marginLeft: '0.5rem' }}>
+            {selectedFile ? selectedFile.name : 'Click or drag file to upload'}
+          </span>
+        </FileInputLabel>
+
+        <FormGroup>
+          <label>File Type</label>
+          <select
+            value={mediaForm.type}
+            onChange={(e) => setMediaForm(prev => ({
+              ...prev,
+              type: e.target.value
+            }))}
+          >
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+            <option value="document">Document</option>
+          </select>
+        </FormGroup>
+
+        <FormGroup>
+          <label>Folder</label>
+          <select
+            value={mediaForm.folder}
+            onChange={(e) => setMediaForm(prev => ({
+              ...prev,
+              folder: e.target.value
+            }))}
+          >
+            <option value="general">General</option>
+            <option value="products">Products</option>
+            <option value="blogs">Blogs</option>
+          </select>
+        </FormGroup>
+
+        <FormGroup>
+          <label>Alt Text</label>
+          <input
+            type="text"
+            value={mediaForm.alt}
+            onChange={(e) => setMediaForm(prev => ({
+              ...prev,
+              alt: e.target.value
+            }))}
+            placeholder="Enter alt text"
+          />
+        </FormGroup>
+
+        <FormGroup>
+          <label>Caption</label>
+          <input
+            type="text"
+            value={mediaForm.caption}
+            onChange={(e) => setMediaForm(prev => ({
+              ...prev,
+              caption: e.target.value
+            }))}
+            placeholder="Enter caption"
+          />
+        </FormGroup>
+
+        <SubmitButton onClick={handleSubmit} disabled={!selectedFile}>
+          Upload
+        </SubmitButton>
+      </ModalContent>
+    </Modal>
+  );
 
   return (
     <Container>
-    <Header>
-      <h1>Media Library</h1>
-      <AddButton onClick={handleAddMedia}>
-        <Plus size={16} />
-        Add Media
-      </AddButton>
-    </Header>
+      <Header>
+        <h1>Media Library</h1>
+        <AddButton onClick={() => setIsUploadModalOpen(true)}>
+          <Plus size={16} />
+          Add Media
+        </AddButton>
+      </Header>
 
-    <Controls>
-      <SearchInput
-        type="text"
-        placeholder="Search your files"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
-      <SortSelect 
-        value={sortOrder}
-        onChange={(e) => setSortOrder(e.target.value)}
-      >
-        <option value="desc">Sort By desc</option>
-        <option value="asc">Sort By asc</option>
-      </SortSelect>
-    </Controls>
+      <Controls>
+        <SearchInput
+          type="text"
+          placeholder="Search media"
+          value={filters.search}
+          onChange={(e) => setFilters(prev => ({
+            ...prev,
+            search: e.target.value
+          }))}
+        />
+        <FilterSelect
+          value={filters.type}
+          onChange={(e) => setFilters(prev => ({
+            ...prev,
+            type: e.target.value
+          }))}
+        >
+          <option value="">All Types</option>
+          <option value="image">Images</option>
+          <option value="video">Videos</option>
+          <option value="document">Documents</option>
+        </FilterSelect>
+      </Controls>
 
-    <MediaGrid>
-      {currentMedia.map((item) => (
-        <MediaItem key={item.id}>
-          <img src={item.src} alt={`Media ${item.id}`} />
-        </MediaItem>
-      ))}
-    </MediaGrid>
+      {loading ? (
+        <NoMediaContainer>Loading...</NoMediaContainer>
+      ) : media.length === 0 ? (
+        <NoMediaContainer>
+          <FileImage size={48} />
+          <p style={{ marginTop: '1rem', color: '#718096' }}>No media files found</p>
+          <AddButton onClick={() => setIsUploadModalOpen(true)} style={{ marginTop: '1rem' }}>
+            <Plus size={16} />
+            Add Media
+          </AddButton>
+        </NoMediaContainer>
+      ) : (
+        <>
+          <MediaGrid>
+            {media.map((item) => (
+              <MediaCard key={item._id}>
+                <ActionButtons>
+                  <ActionButton onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = item.url;
+                    link.download = item.fileName;
+                    link.click();
+                  }}>
+                    <Download size={16} />
+                  </ActionButton>
+                  <ActionButton onClick={() => handleDeleteMedia(item._id)}>
+                    <Trash2 size={16} />
+                  </ActionButton>
+                </ActionButtons>
+                {item.fileType === 'image' ? (
+                  <MediaThumbnail src={item.url} alt={item.alt || item.fileName} />
+                ) : (
+                  <MediaThumbnail 
+                    src="/file-placeholder.svg" 
+                    alt="File placeholder" 
+                  />
+                )}
+                <MediaInfo>
+                  <MediaName>{item.fileName}</MediaName>
+                  <MediaMeta>{item.fileType}</MediaMeta>
+                </MediaInfo>
+              </MediaCard>
+            ))}
+          </MediaGrid>
 
-    <Pagination>
-      {renderPaginationButtons()}
-    </Pagination>
-  </Container>
-);
+          <Pagination>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                className={page === currentPage ? 'active' : ''}
+                onClick={() => dispatch(fetchMedia({ page }))}
+              >
+                {page}
+              </button>
+            ))}
+          </Pagination>
+        </>
+      )}
+
+      {isUploadModalOpen && renderUploadModal()}
+    </Container>
+  );
 };
 
 export default Media;
-

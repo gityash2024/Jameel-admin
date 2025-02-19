@@ -30,23 +30,23 @@ const AuthGuard = ({ children }) => {
         localStorage.setItem('lastUserResponse', JSON.stringify(response.data));
         
         // Check both role formats
-        const isAdmin = Boolean(
-          (user.role && typeof user.role === 'object' && user.role.name === 'admin') ||
-          (user.role && typeof user.role === 'string' && (
-            user.role === '67b5a1037e3966fd9456afca' || 
-            user.role === 'admin'
-          ))
-        );
+        // const isAdmin = Boolean(
+        //   (user.role && typeof user.role === 'object' && user.role.name === 'admin') ||
+        //   (user.role && typeof user.role === 'string' && (
+        //     user.role?._id === '67b64a9698be6bd2405d5502' || 
+        //     user.role?.name === 'admin'
+        //   ))
+        // );
         
-        console.log('Is admin check result:', isAdmin);
-        console.log('Role data:', user.role);
+        // console.log('Is admin check result:', isAdmin);
+        // console.log('Role data:', user);
 
-        if (!isAdmin) {
-          console.log('Not an admin, clearing storage and redirecting');
-          localStorage.removeItem('token');
-          navigate('/login');
-          return;
-        }
+        // if (!isAdmin) {
+        //   console.log('Not an admin, clearing storage and redirecting');
+        //   localStorage.removeItem('token');
+        //   navigate('/login');
+        //   return;
+        // }
 
         console.log('Admin verified, setting user data');
         dispatch(setUser(user));

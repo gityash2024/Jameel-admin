@@ -222,6 +222,16 @@ const Sidebar = () => {
       path: '/blogs'
     },
     {
+      label: 'Review',
+      icon: Star,
+      path: '/review'
+    },
+    {
+      label: "FAQ's",
+      icon: HelpCircle,
+      path: '/faqs'
+    },
+    {
       label: 'Taxies',
       icon: Percent,
       path: '/taxies'
@@ -241,16 +251,7 @@ const Sidebar = () => {
       icon: DollarSign,
       path: '/currencies'
     },
-    {
-      label: 'Review',
-      icon: Star,
-      path: '/review'
-    },
-    {
-      label: "FAQ's",
-      icon: HelpCircle,
-      path: '/faqs'
-    },
+   
     {
        label: "Book-In-Appointment",
        icon: Calendar,

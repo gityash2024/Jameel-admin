@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Trash2, Star } from 'lucide-react';
+import { Trash2, Star, FileX } from 'lucide-react';
 import ring from '../assets/ring.png';
 
 const Container = styled.div`
@@ -117,27 +117,37 @@ const DeleteButton = styled.button`
   }
 `;
 
+const NoDataContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 0.5rem;
+  text-align: center;
+`;
+
+const NoDataIcon = styled.div`
+  margin-bottom: 1.5rem;
+  color: #A0AEC0;
+`;
+
+const NoDataText = styled.p`
+  color: #4A5568;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+`;
+
+const NoDataSubText = styled.p`
+  color: #718096;
+  font-size: 0.875rem;
+`;
+
 const Review = () => {
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [searchQuery, setSearchQuery] = useState('');
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      image: ring,
-      customerName: "Rhoda Mayer",
-      productName: "Classic Jacket",
-      rating: 4,
-      createdAt: "25/6/2024 3:52 pm"
-    },
-    {
-      id: 2,
-      image: ring,
-      customerName: "john due",
-      productName: "Versatile Shacket",
-      rating: 5,
-      createdAt: "21/6/2024 3:37 pm"
-    }
-  ]);
+  const [reviews, setReviews] = useState([]);
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this review?')) {
@@ -188,46 +198,56 @@ const Review = () => {
         />
       </Controls>
 
-      <Table>
-        <thead>
-          <tr>
-            <Th style={{ width: '40px' }}>
-              <input type="checkbox" />
-            </Th>
-            <Th>Image</Th>
-            <Th>Customer Name</Th>
-            <Th>Product Name</Th>
-            <Th>Rating</Th>
-            <Th>Create At</Th>
-            <Th>Action</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredReviews.map(review => (
-            <tr key={review.id}>
-              <Td>
+      {filteredReviews.length > 0 ? (
+        <Table>
+          <thead>
+            <tr>
+              <Th style={{ width: '40px' }}>
                 <input type="checkbox" />
-              </Td>
-              <Td>
-                <ProductImage src={review.image} alt={review.productName} />
-              </Td>
-              <Td>{review.customerName}</Td>
-              <Td>{review.productName}</Td>
-              <Td>
-                <StarRating>
-                  {renderStars(review.rating)}
-                </StarRating>
-              </Td>
-              <Td>{review.createdAt}</Td>
-              <Td>
-                <DeleteButton onClick={() => handleDelete(review.id)}>
-                  <Trash2 size={16} />
-                </DeleteButton>
-              </Td>
+              </Th>
+              <Th>Image</Th>
+              <Th>Customer Name</Th>
+              <Th>Product Name</Th>
+              <Th>Rating</Th>
+              <Th>Create At</Th>
+              <Th>Action</Th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {filteredReviews.map(review => (
+              <tr key={review.id}>
+                <Td>
+                  <input type="checkbox" />
+                </Td>
+                <Td>
+                  <ProductImage src={review.image} alt={review.productName} />
+                </Td>
+                <Td>{review.customerName}</Td>
+                <Td>{review.productName}</Td>
+                <Td>
+                  <StarRating>
+                    {renderStars(review.rating)}
+                  </StarRating>
+                </Td>
+                <Td>{review.createdAt}</Td>
+                <Td>
+                  <DeleteButton onClick={() => handleDelete(review.id)}>
+                    <Trash2 size={16} />
+                  </DeleteButton>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      ) : (
+        <NoDataContainer>
+          <NoDataIcon>
+            <FileX size={60} />
+          </NoDataIcon>
+          <NoDataText>No Reviews Found</NoDataText>
+          <NoDataSubText>There are no customer reviews to display at this time.</NoDataSubText>
+        </NoDataContainer>
+      )}
     </Container>
   );
 };

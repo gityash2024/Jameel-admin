@@ -198,7 +198,7 @@ const handleSubmit = async (e) => {
     // Check if user has admin role
     const isAdmin = 
       (typeof user.role === 'object' && user.role?.name === 'admin') ||
-      (typeof user.role === 'string' && user.role === '67b5a1037e3966fd9456afca');
+      (typeof user.role === 'string' && user.role === '67b64a9698be6bd2405d5502');
     
     if (!isAdmin) {
       toast.error('Access denied. Admin privileges required.');

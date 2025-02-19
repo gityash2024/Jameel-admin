@@ -5,6 +5,9 @@ import roleReducer from './role/roleSlice';
 import productReducer from './products/productSlice';
 import categoryReducer from './category/categorySlice';
 import tagReducer from './tags/tagSlice';
+import mediaReducer from './media/mediaSlice';
+import blogReducer from './blog/blogSlice';
+
 
 export const store = configureStore({
   reducer: {
@@ -13,7 +16,10 @@ export const store = configureStore({
     role: roleReducer,
     product: productReducer,
     category: categoryReducer,
-    tag: tagReducer
+    tag: tagReducer,
+    media: mediaReducer,
+    blogs: blogReducer
+
   },
 });
 
