@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import { Edit, Trash2, Eye, Download, Plus, X } from 'lucide-react';
-import { fetchProducts, deleteProduct, updateProductStatus } from '../features/products/productSlice';
+import { Edit, Trash2, Eye, Download, Plus, X, Info } from 'lucide-react';
+import { 
+  fetchProducts, 
+  deleteProduct, 
+  updateProductStatus, 
+} from '../features/products/productSlice';
 import { toast } from 'react-hot-toast';
 
 const shimmer = keyframes`
@@ -244,7 +248,9 @@ const ModalContent = styled.div`
   padding: 2rem;
   border-radius: 0.5rem;
   width: 100%;
-  max-width: 500px;
+  max-width: ${props => props.size || '500px'};
+  max-height: 90vh;
+  overflow-y: auto;
 `;
 
 const ModalHeader = styled.div`
@@ -264,6 +270,32 @@ const ModalText = styled.p`
   color: #4a5568;
   font-size: 0.875rem;
   margin-bottom: 1.5rem;
+`;
+
+const ProductDetailGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+`;
+
+const ProductDetailSection = styled.div`
+  margin-bottom: 1rem;
+`;
+
+const ProductDetailLabel = styled.p`
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+`;
+
+const ProductDetailValue = styled.p`
+  color: #1a202c;
+`;
+
+const ProductImageContainer = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
 `;
 
 const SkeletonCell = styled.div`
@@ -301,11 +333,13 @@ const EmptyState = styled.div`
 const AllProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { products, loading } = useSelector((state) => state.product);
+  const { products, loading, product: selectedProductDetail } = useSelector((state) => state.product);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentProduct, setCurrentProduct] = useState(null);
   const [filters, setFilters] = useState({
     type: '',
     brand: '',
@@ -327,14 +361,16 @@ const AllProducts = () => {
     }));
   };
 
-  const handleStatusChange = (product, newStatus) => {
-    setConfirmAction({
-      type: 'status',
-      product,
-      newStatus,
-      message: `Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this product?`
-    });
-    setIsConfirmModalOpen(true);
+  const handleStatusChange = async (product, newStatus) => {
+    try {
+      await dispatch(updateProductStatus({
+        id: product._id, 
+        status: newStatus
+      })).unwrap();
+      toast.success(`Product ${newStatus ? 'activated' : 'deactivated'} successfully`);
+    } catch (error) {
+      toast.error(error.message || 'Failed to update product status');
+    }
   };
 
   const handleDeleteClick = (product) => {
@@ -351,21 +387,22 @@ const AllProducts = () => {
       if (confirmAction.type === 'delete') {
         await dispatch(deleteProduct(confirmAction.product._id)).unwrap();
         toast.success('Product deleted successfully');
-      } else if (confirmAction.type === 'status') {
-        await dispatch(updateProductStatus({
-          id: confirmAction.product._id,
-          status: confirmAction.newStatus
-        })).unwrap();
-        toast.success('Product status updated successfully');
       }
-      dispatch(fetchProducts());
+      setIsConfirmModalOpen(false);
+      setConfirmAction(null);
     } catch (error) {
       toast.error(error.message || 'Action failed');
     }
-    setIsConfirmModalOpen(false);
-    setConfirmAction(null);
   };
 
+  const handleEditClick = (product) => {
+    navigate(`/products/edit/${product._id}`);
+  };
+
+  const handleViewClick = (product) => {
+    setCurrentProduct(product);
+    setIsViewModalOpen(true);
+  };
   const handleExport = () => {
     const csv = [
       ['Name', 'SKU', 'Brand', 'Price', 'Stock', 'Status'],
@@ -482,7 +519,7 @@ const AllProducts = () => {
             <option value="in_stock">In Stock</option>
             <option value="out_of_stock">Out of Stock</option>
             <option value="on_backorder">On Backorder</option>
-            </Select>
+          </Select>
 
           <SearchInput
             type="text"
@@ -547,13 +584,13 @@ const AllProducts = () => {
                 </Td>
                 <Td>
                   <ButtonGroup>
-                    <ActionButton onClick={() => navigate(`/products/edit/${product._id}`)}>
+                    <ActionButton onClick={() => handleEditClick(product)}>
                       <Edit size={16} />
                     </ActionButton>
                     <ActionButton delete onClick={() => handleDeleteClick(product)}>
                       <Trash2 size={16} />
                     </ActionButton>
-                    <ActionButton onClick={() => navigate(`/products/${product._id}`)}>
+                    <ActionButton onClick={() => handleViewClick(product)}>
                       <Eye size={16} />
                     </ActionButton>
                   </ButtonGroup>
@@ -593,8 +630,117 @@ const AllProducts = () => {
           </ModalContent>
         </Modal>
       )}
+
+{isViewModalOpen && currentProduct && (
+  <Modal>
+    <ModalContent size="800px">
+      <ModalHeader>
+        <ModalTitle>Product Details</ModalTitle>
+        <Button onClick={() => setIsViewModalOpen(false)}>
+          <X size={20} />
+        </Button>
+      </ModalHeader>
+
+      <ProductDetailGrid>
+        <div>
+          <ProductDetailSection>
+            <ProductDetailLabel>Name</ProductDetailLabel>
+            <ProductDetailValue>{currentProduct.name}</ProductDetailValue>
+          </ProductDetailSection>
+
+          <ProductDetailSection>
+            <ProductDetailLabel>SKU</ProductDetailLabel>
+            <ProductDetailValue>{currentProduct.sku}</ProductDetailValue>
+          </ProductDetailSection>
+
+          <ProductDetailSection>
+            <ProductDetailLabel>Brand</ProductDetailLabel>
+            <ProductDetailValue>{currentProduct.brand}</ProductDetailValue>
+          </ProductDetailSection>
+
+          <ProductDetailSection>
+            <ProductDetailLabel>Type</ProductDetailLabel>
+            <ProductDetailValue>{currentProduct.type}</ProductDetailValue>
+          </ProductDetailSection>
+
+          <ProductDetailSection>
+            <ProductDetailLabel>Category</ProductDetailLabel>
+            <ProductDetailValue>{currentProduct.category.name}</ProductDetailValue>
+          </ProductDetailSection>
+
+          <ProductDetailSection>
+            <ProductDetailLabel>Price</ProductDetailLabel>
+            <ProductDetailValue>
+              Regular: ${currentProduct.regularPrice.toFixed(2)}
+              {currentProduct.salePrice && 
+                ` | Sale: $${currentProduct.salePrice.toFixed(2)}`
+              }
+            </ProductDetailValue>
+          </ProductDetailSection>
+        </div>
+
+        <div>
+          <ProductDetailSection>
+            <ProductDetailLabel>Stock Quantity</ProductDetailLabel>
+            <ProductDetailValue>{currentProduct.stockQuantity}</ProductDetailValue>
+          </ProductDetailSection>
+
+          <ProductDetailSection>
+            <ProductDetailLabel>Stock Status</ProductDetailLabel>
+            <ProductDetailValue>
+              <StockBadge status={currentProduct.stockStatus}>
+                {currentProduct.stockStatus === 'in_stock' ? 'In Stock' :
+                 currentProduct.stockStatus === 'out_of_stock' ? 'Out of Stock' :
+                 'On Backorder'}
+              </StockBadge>
+            </ProductDetailValue>
+          </ProductDetailSection>
+
+          <ProductDetailSection>
+            <ProductDetailLabel>Status</ProductDetailLabel>
+            <ProductDetailValue>
+              {currentProduct.isActive ? 'Active' : 'Inactive'}
+            </ProductDetailValue>
+          </ProductDetailSection>
+
+          <ProductDetailSection>
+            <ProductDetailLabel>Featured</ProductDetailLabel>
+            <ProductDetailValue>
+              {currentProduct.isFeatured ? 'Yes' : 'No'}
+            </ProductDetailValue>
+          </ProductDetailSection>
+
+          <ProductDetailSection>
+            <ProductDetailLabel>New Arrival</ProductDetailLabel>
+            <ProductDetailValue>
+              {currentProduct.isNewArrival ? 'Yes' : 'No'}
+            </ProductDetailValue>
+          </ProductDetailSection>
+        </div>
+      </ProductDetailGrid>
+
+      <ProductDetailSection>
+        <ProductDetailLabel>Description</ProductDetailLabel>
+        <ProductDetailValue>{currentProduct.description}</ProductDetailValue>
+      </ProductDetailSection>
+
+      <ProductDetailSection>
+        <ProductDetailLabel>Product Images</ProductDetailLabel>
+        <ProductImageContainer>
+          {currentProduct.images.map((image, index) => (
+            <ProductImage 
+              key={index} 
+              src={image.url} 
+              alt={`Product ${index + 1}`} 
+            />
+          ))}
+        </ProductImageContainer>
+      </ProductDetailSection>
+    </ModalContent>
+  </Modal>
+)}
     </Container>
   );
 };
 
-export default AllProducts;
+export default AllProducts; 

@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import styled from "styled-components";
 import {
   Settings,
   Image as ImageIcon,
   Package,
-  ToggleLeft
+  ToggleLeft,
+  ArrowLeft
 } from "lucide-react";
-import { createProduct } from "../features/products/productSlice";
+import { createProduct, fetchProduct, updateProduct } from "../features/products/productSlice";
 import { fetchCategories } from "../features/category/categorySlice";
 import { fetchTags } from "../features/tags/tagSlice";
 import { toast } from "react-hot-toast";
@@ -61,6 +62,9 @@ const FormHeader = styled.h1`
   font-weight: 600;
   color: #1a202c;
   margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 `;
 
 const FormGroup = styled.div`
@@ -145,6 +149,9 @@ const Button = styled.button`
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   ${(props) =>
     props.primary
       ? `
@@ -269,11 +276,14 @@ const HelperText = styled.div`
 const AddProduct = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = !!id;
   const { loading } = useSelector((state) => state.product);
   const { categories } = useSelector((state) => state.category);
   const { tags } = useSelector((state) => state.tag);
   const [activeSection, setActiveSection] = useState("general");
   const [images, setImages] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -297,7 +307,39 @@ const AddProduct = () => {
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchTags());
-  }, [dispatch]);
+
+    if (isEditMode) {
+      dispatch(fetchProduct(id)).then((action) => {
+        if (action.payload) {
+          const product = action.payload.data.product;
+          setSelectedProduct(product);
+          setFormData({
+            name: product.name,
+            sku: product.sku,
+            description: product.description,
+            shortDescription: product.shortDescription,
+            type: product.type,
+            brand: product.brand,
+            regularPrice: product.regularPrice,
+            salePrice: product.salePrice || "",
+            stockQuantity: product.stockQuantity,
+            lowStockThreshold: product.lowStockThreshold,
+            stockStatus: product.stockStatus,
+            category: product.category._id,
+            tags: product.tags.map(tag => tag._id || tag),
+            isActive: product.isActive,
+            isFeatured: product.isFeatured,
+            isNewArrival: product.isNewArrival
+          });
+          setImages(product.images.map(img => ({
+            preview: img.url,
+            url: img.url,
+            alt: img.alt
+          })));
+        }
+      });
+    }
+  }, [dispatch, id, isEditMode]);
 
   const menuItems = [
     { id: "general", label: "General", icon: Settings },
@@ -370,7 +412,11 @@ const AddProduct = () => {
     const formDataToSend = new FormData();
 
     Object.keys(formData).forEach((key) => {
-      formDataToSend.append(key, formData[key]);
+      if (key === "tags") {
+        formDataToSend.append(key, JSON.stringify(formData[key]));
+      } else {
+        formDataToSend.append(key, formData[key]);
+      }
     });
 
     formDataToSend.append(
@@ -378,18 +424,60 @@ const AddProduct = () => {
       JSON.stringify(
         images.map((img) => ({
           url: img.url,
-          alt: img.file.name
+          alt: img.file ? img.file.name : img.alt
         }))
       )
     );
 
     try {
-      await dispatch(createProduct(formDataToSend)).unwrap();
-      toast.success("Product created successfully");
+      if (isEditMode) {
+        await dispatch(updateProduct({ id, productData: formDataToSend })).unwrap();
+        toast.success("Product updated successfully");
+      } else {
+        await dispatch(createProduct(formDataToSend)).unwrap();
+        toast.success("Product created successfully");
+      }
       navigate("/products");
     } catch (error) {
-      toast.error(error.message || "Error creating product");
+      toast.error(error.message || "Error saving product");
     }
+  };
+
+  const validateForm = () => {
+    const requiredFields = [
+      "name",
+      "sku",
+      "description",
+      "shortDescription",
+      "type",
+      "brand",
+      "regularPrice",
+      "stockQuantity",
+      "category"
+    ];
+    const missingFields = requiredFields.filter((field) => !formData[field]);
+    if (missingFields.length > 0) {
+      toast.error(
+        `Please fill in all required fields: ${missingFields.join(", ")}`
+      );
+      return false;
+    }
+
+    if (images.length === 0) {
+      toast.error("Please add at least one product image");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
+
+    handleSubmit();
   };
 
   const renderGeneralSection = () => (
@@ -557,7 +645,7 @@ const AddProduct = () => {
     <>
       <FormGroup>
         <label className="required">Stock Quantity</label>
-        <Input
+        <Input  
           type="number"
           name="stockQuantity"
           value={formData.stockQuantity}
@@ -594,6 +682,7 @@ const AddProduct = () => {
       </FormGroup>
     </>
   );
+
   const renderStatusSection = () => (
     <>
       <FormGroup>
@@ -646,33 +735,7 @@ const AddProduct = () => {
       </FormGroup>
     </>
   );
-  const validateForm = () => {
-    const requiredFields = [
-      "name",
-      "sku",
-      "description",
-      "shortDescription",
-      "type",
-      "brand",
-      "regularPrice",
-      "stockQuantity",
-      "category"
-    ];
-    const missingFields = requiredFields.filter((field) => !formData[field]);
-    if (missingFields.length > 0) {
-      toast.error(
-        `Please fill in all required fields: ${missingFields.join(", ")}`
-      );
-      return false;
-    }
 
-    if (images.length === 0) {
-      toast.error("Please add at least one product image");
-      return false;
-    }
-
-    return true;
-  };
   const renderActiveSection = () => {
     switch (activeSection) {
       case "general":
@@ -687,14 +750,7 @@ const AddProduct = () => {
         return renderGeneralSection();
     }
   };
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) {
-      return;
-    }
 
-    handleSubmit();
-  };
   return (
     <Container>
       <Sidebar>
@@ -711,14 +767,28 @@ const AddProduct = () => {
       </Sidebar>
       <form onSubmit={handleFormSubmit}>
         <FormSection>
-          <FormHeader>Add Product</FormHeader>
+          <FormHeader>
+            <Button 
+              type="button" 
+              onClick={() => navigate("/products")}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                padding: 0, 
+                marginRight: '1rem' 
+              }}
+            >
+              <ArrowLeft size={24} />
+            </Button>
+            {isEditMode ? "Edit Product" : "Add Product"}
+          </FormHeader>
           {renderActiveSection()}
           <ButtonGroup>
             <Button type="button" onClick={() => navigate("/products")}>
               Cancel
             </Button>
             <Button type="submit" primary disabled={loading}>
-              {loading ? "Saving..." : "Save Product"}
+              {loading ? "Saving..." : (isEditMode ? "Update Product" : "Save Product")}
             </Button>
           </ButtonGroup>
         </FormSection>
@@ -726,4 +796,5 @@ const AddProduct = () => {
     </Container>
   );
 };
+
 export default AddProduct;

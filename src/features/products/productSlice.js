@@ -1,3 +1,4 @@
+// In your productSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { productAPI } from '../../services/api';
 
@@ -33,27 +34,19 @@ export const updateProduct = createAsyncThunk(
   }
 );
 
+export const updateProductStatus = createAsyncThunk(
+  'product/updateStatus',
+  async ({ id, status }) => {
+    const response = await productAPI.updateProduct(id, { isActive: status });
+    return { id, status, data: response.data.product };
+  }
+);
+
 export const deleteProduct = createAsyncThunk(
   'product/deleteProduct',
   async (id) => {
     await productAPI.deleteProduct(id);
     return id;
-  }
-);
-
-export const updateProductStatus = createAsyncThunk(
-  'product/updateStatus',
-  async ({ id, status }) => {
-    const response = await productAPI.updateProductStatus(id, status);
-    return { id, status, data: response.data };
-  }
-);
-
-export const bulkDeleteProducts = createAsyncThunk(
-  'product/bulkDelete',
-  async (ids) => {
-    await productAPI.bulkDeleteProducts(ids);
-    return { ids };
   }
 );
 
@@ -64,7 +57,6 @@ const productSlice = createSlice({
     product: null,
     loading: false,
     error: null,
-    selectedProduct: null,
     total: 0,
     filters: {
       search: '',
@@ -95,12 +87,6 @@ const productSlice = createSlice({
         page: 1,
         limit: 10
       };
-    },
-    setSelectedProduct: (state, action) => {
-      state.selectedProduct = action.payload;
-    },
-    clearSelectedProduct: (state) => {
-      state.selectedProduct = null;
     }
   },
   extraReducers: (builder) => {
@@ -118,55 +104,9 @@ const productSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
-
-      .addCase(createProduct.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      .addCase(fetchProduct.fulfilled, (state, action) => {
+        state.product = action.payload.data.product;
       })
-      .addCase(createProduct.fulfilled, (state, action) => {
-        state.loading = false;
-        state.products.unshift(action.payload.data.product);
-        state.total += 1;
-      })
-      .addCase(createProduct.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
-      })
-
-      .addCase(updateProduct.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(updateProduct.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.products.findIndex(
-          (product) => product._id === action.payload.data.product._id
-        );
-        if (index !== -1) {
-          state.products[index] = action.payload.data.product;
-        }
-      })
-      .addCase(updateProduct.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
-      })
-
-      .addCase(deleteProduct.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deleteProduct.fulfilled, (state, action) => {
-        state.loading = false;
-        state.products = state.products.filter(
-          (product) => product._id !== action.payload
-        );
-        state.total -= 1;
-      })
-      .addCase(deleteProduct.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
-      })
-
       .addCase(updateProductStatus.fulfilled, (state, action) => {
         const index = state.products.findIndex(
           (product) => product._id === action.payload.id
@@ -175,21 +115,15 @@ const productSlice = createSlice({
           state.products[index].isActive = action.payload.status;
         }
       })
-
-      .addCase(bulkDeleteProducts.fulfilled, (state, action) => {
+      .addCase(deleteProduct.fulfilled, (state, action) => {
         state.products = state.products.filter(
-          (product) => !action.payload.ids.includes(product._id)
+          (product) => product._id !== action.payload
         );
-        state.total -= action.payload.ids.length;
+        state.total -= 1;
       });
   }
 });
 
-export const { 
-  setFilters, 
-  resetFilters, 
-  setSelectedProduct, 
-  clearSelectedProduct 
-} = productSlice.actions;
+export const { setFilters, resetFilters } = productSlice.actions;
 
 export default productSlice.reducer;

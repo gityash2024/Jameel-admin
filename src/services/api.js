@@ -91,33 +91,10 @@
   export const productAPI = {
     getAllProducts: (params) => http.get('/products', { params }),
     getProduct: (id) => http.get(`/products/${id}`),
-    getProductBySlug: (slug) => http.get(`/products/${slug}`),
     createProduct: (data) => http.post('/products', data),
     updateProduct: (id, data) => http.put(`/products/${id}`, data),
     deleteProduct: (id) => http.delete(`/products/${id}`),
-    getFeaturedProducts: () => http.get('/products/featured'),
-    getNewArrivals: () => http.get('/products/new-arrivals'),
-    searchProducts: (params) => http.get('/products/search', { params }),
-    
-    // Variant operations
-    createVariant: (productId, data) => http.post(`/products/${productId}/variants`, data),
-    updateVariant: (productId, variantId, data) => 
-      http.put(`/products/${productId}/variants/${variantId}`, data),
-    deleteVariant: (productId, variantId) => 
-      http.delete(`/products/${productId}/variants/${variantId}`),
-    
-    // Review operations
-    getProductReviews: (productId, params) => 
-      http.get(`/products/${productId}/reviews`, { params }),
-    createProductReview: (productId, data) => 
-      http.post(`/products/${productId}/reviews`, data),
-    
-    // Bulk operations
-    bulkCreateProducts: (products) => http.post('/products/bulk/create', { products }),
-    bulkUpdateProducts: (products) => http.put('/products/bulk/update', { products }),
-    bulkDeleteProducts: (ids) => http.delete('/products/bulk/delete', { data: { ids } })
   };
-
 
   export const userAPI = {
     getAllUsers: () => http.get('/users'),
