@@ -1,109 +1,135 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
-import { ChevronDown, ChevronRight, Image as ImageIcon, Plus, X, Folder } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import styled, { keyframes } from 'styled-components';
+import { Plus, X, Package } from 'lucide-react';
+import { fetchCategories, createCategory, updateCategory, deleteCategory } from '../features/category/categorySlice';
+import { toast } from 'react-hot-toast';
+
+const shimmer = keyframes`
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+`;
 
 const Container = styled.div`
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 2rem;
   padding: 2rem;
 `;
 
-const CategoryTreeSection = styled.div`
-  background: white;
-  border-radius: 0.5rem;
-  padding: 1rem;
-`;
-
-const CategoryHeader = styled.div`
+const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-
-  h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #1a202c;
-  }
+  margin-bottom: 2rem;
 `;
 
-const ActionButton = styled.button`
-  padding: 0.5rem 1rem;
+const Title = styled.h1`
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a202c;
+`;
+
+const Table = styled.table`
+  width: 100%;
   background: white;
+  border-radius: 0.5rem;
   border: 1px solid #e2e8f0;
+  border-collapse: collapse;
+`;
+
+const Th = styled.th`
+  padding: 1rem;
+  text-align: left;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #4a5568;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+`;
+
+const Td = styled.td`
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #1a202c;
+  border-bottom: 1px solid #e2e8f0;
+`;
+
+const Button = styled.button`
+  padding: 0.5rem 1rem;
+  background: ${props => props.primary ? '#000' : 'white'};
+  color: ${props => props.primary ? 'white' : '#1a202c'};
+  border: 1px solid ${props => props.primary ? '#000' : '#e2e8f0'};
   border-radius: 0.375rem;
   font-size: 0.875rem;
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
 
   &:hover {
-    background: #f7fafc;
+    background: ${props => props.primary ? '#1a1a1a' : '#f7fafc'};
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
-const SearchBox = styled.input`
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  outline: none;
-  font-size: 0.875rem;
-  margin-bottom: 1rem;
-
-  &::placeholder {
-    color: #a0aec0;
-  }
-
-  &:focus {
-    border-color: #4299e1;
-  }
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 `;
 
-const TreeContainer = styled.div`
-  .folder-icon {
-    color: #ecc94b;
-  }
-
-  .category-label {
-    font-size: 0.875rem;
-    color: #4a5568;
-  }
-`;
-
-const TreeItem = styled.div`
-  .item-content {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem;
-    cursor: pointer;
-    gap: 0.5rem;
-    border-radius: 0.375rem;
-    
-    &:hover {
-      background: #f7fafc;
-    }
-
-    svg {
-      width: 16px;
-      height: 16px;
-      color: #a0aec0;
-    }
-  }
-`;
-
-const FormSection = styled.div`
+const ModalContent = styled.div`
   background: white;
-  border-radius: 0.5rem;
   padding: 2rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
 `;
 
-const FormHeader = styled.h2`
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+`;
+
+const ModalTitle = styled.h2`
   font-size: 1.25rem;
   font-weight: 600;
   color: #1a202c;
-  margin-bottom: 2rem;
+`;
+
+const ModalText = styled.p`
+  color: #4a5568;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: #4a5568;
+  }
 `;
 
 const FormGroup = styled.div`
@@ -112,118 +138,28 @@ const FormGroup = styled.div`
   label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #4a5568;
     font-size: 0.875rem;
     font-weight: 500;
+    color: #4a5568;
   }
 
-  .required:after {
-    content: " *";
-    color: #e53e3e;
-  }
-
-  input, textarea, select {
+  input, textarea {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid #e2e8f0;
     border-radius: 0.375rem;
+    font-size: 0.875rem;
     background: #f8fafc;
     outline: none;
-    font-size: 0.875rem;
 
     &:focus {
       border-color: #4299e1;
     }
   }
 
-  .helper-text {
-    margin-top: 0.25rem;
-    font-size: 0.75rem;
-    color: #718096;
-    font-style: italic;
-  }
-
-  .commission-input {
-    position: relative;
-    
-    input {
-      padding-right: 2rem;
-    }
-
-    .percentage {
-      position: absolute;
-      right: 0.75rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #718096;
-    }
-  }
-`;
-
-const ImageUpload = styled.div`
-  margin-bottom: 1.5rem;
-
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #4a5568;
-    font-size: 0.875rem;
-    font-weight: 500;
-  }
-
-  .upload-box {
-    width: 100px;
-    height: 100px;
-    border: 2px dashed #e2e8f0;
-    border-radius: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    background: #f8fafc;
-
-    &:hover {
-      border-color: #4299e1;
-    }
-
-    svg {
-      color: #a0aec0;
-    }
-  }
-`;
-
-const ImagePreview = styled.div`
-  width: 100px;
-  height: 100px;
-  position: relative;
-  border-radius: 0.5rem;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  button {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    background: rgba(0, 0, 0, 0.5);
-    border: none;
-    border-radius: 0.25rem;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    cursor: pointer;
-    padding: 0;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.7);
-    }
+  textarea {
+    min-height: 100px;
+    resize: vertical;
   }
 `;
 
@@ -272,288 +208,362 @@ const ToggleSwitch = styled.label`
   }
 `;
 
-const SaveButton = styled.button`
-  float: right;
-  padding: 0.75rem 2rem;
-  background: #000;
-  color: white;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.2s;
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+`;
 
-  &:hover {
-    background: #1a1a1a;
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+`;
+
+const EmptyStateIcon = styled.div`
+  color: #a0aec0;
+  margin-bottom: 1rem;
+`;
+
+const EmptyStateText = styled.p`
+  color: #4a5568;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+`;
+
+const SkeletonRow = styled.tr`
+  td {
+    position: relative;
+    overflow: hidden;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #f0f0f0 25%, #f7f7f7 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: ${shimmer} 1.5s infinite;
+    }
   }
 `;
 
+const SkeletonCell = styled.div`
+  height: 20px;
+  width: ${props => props.width || '100%'};
+  background: #f0f0f0;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+`;
+
 const CategoryProduct = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryData, setCategoryData] = useState({
+  const dispatch = useDispatch();
+  const { categories, loading } = useSelector((state) => state.category);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
-    commissionRate: '',
-    parent: '',
-    metaTitle: '',
-    metaDescription: '',
-    status: true
+    isActive: true
   });
-  const [categoryImage, setCategoryImage] = useState(null);
-  const [categoryIcon, setCategoryIcon] = useState(null);
-  const [expandedItems, setExpandedItems] = useState(['']);
 
-  const categories = [
-    { id: 1, name: 'Baby Essentials', parent: null },
-    { id: 2, name: 'Bag Emporium', parent: null },
-    { id: 3, name: 'Books', parent: null },
-    { id: 4, name: 'Christmas', parent: null },
-    { id: 5, name: 'Classic Furnishings', parent: null },
-    { id: 6, name: 'Crystal Clarity Optics', parent: null },
-    { id: 7, name: 'Fashion', parent: null },
-    { id: 8, name: 'Fit Gear Central', parent: null },
-    { id: 9, name: 'Flowers', parent: null },
-    { id: 10, name: 'Green Haven Nursery', parent: null },
-    { id: 11, name: 'Hybrid Bicycle', parent: null },
-    { id: 12, name: 'Lingerie', parent: null },
-    { id: 13, name: 'Marijuana', parent: null }
-  ];
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
-  const handleImageUpload = (type, file) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (type === 'image') {
-        setCategoryImage(reader.result);
-      } else if (type === 'icon') {
-        setCategoryIcon(reader.result);
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      isActive: true
+    });
+    setEditingCategory(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingCategory) {
+        await dispatch(updateCategory({
+          id: editingCategory._id,
+          categoryData: formData
+        })).unwrap();
+        toast.success('Category updated successfully');
+        dispatch(fetchCategories());
+      } else {
+        await dispatch(createCategory(formData)).unwrap();
+        toast.success('Category created successfully');
+        dispatch(fetchCategories());
       }
-    };
-    if (file) {
-      reader.readAsDataURL(file);
+      setIsModalOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error.message || (editingCategory ? 'Failed to update category' : 'Failed to create category'));
     }
   };
 
-  const handleRemoveImage = (type) => {
-    if (type === 'image') {
-      setCategoryImage(null);
-    } else if (type === 'icon') {
-      setCategoryIcon(null);
+  const handleEdit = (category) => {
+    setEditingCategory(category);
+    setFormData({
+      name: category.name,
+      description: category.description || '',
+      isActive: category.isActive
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleStatusChange = (category, newStatus) => {
+    setConfirmAction({
+      type: 'status',
+      category,
+      newStatus,
+      message: `Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this category?`
+    });
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleDeleteClick = (category) => {
+    setConfirmAction({
+      type: 'delete',
+      category,
+      message: 'Are you sure you want to delete this category?'
+    });
+    setIsConfirmModalOpen(true);
+  };
+
+  const handleConfirmAction = async () => {
+    try {
+      if (confirmAction.type === 'delete') {
+        await dispatch(deleteCategory(confirmAction.category._id)).unwrap();
+        toast.success('Category deleted successfully');
+      } else if (confirmAction.type === 'status') {
+        await dispatch(updateCategory({
+          id: confirmAction.category._id,
+          categoryData: { ...confirmAction.category, isActive: confirmAction.newStatus }
+        })).unwrap();
+        toast.success('Category status updated successfully');
+      }
+      dispatch(fetchCategories());
+    } catch (error) {
+      toast.error(error.message || 'Action failed');
     }
+    setIsConfirmModalOpen(false);
+    setConfirmAction(null);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setCategoryData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const renderSkeletonLoader = () => (
+    <Table>
+      <thead>
+        <tr>
+          <Th>Name</Th>
+          <Th>Description</Th>
+          <Th>Status</Th>
+          <Th>Actions</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {[1, 2, 3].map((index) => (
+          <SkeletonRow key={index}>
+            <Td><SkeletonCell width="150px" /></Td>
+            <Td><SkeletonCell /></Td>
+            <Td><SkeletonCell width="44px" /></Td>
+            <Td><SkeletonCell width="120px" /></Td>
+          </SkeletonRow>
+        ))}
+      </tbody>
+    </Table>
+  );
 
-  const toggleExpand = (id) => {
-    setExpandedItems(prev => 
-      prev.includes(id)
-        ? prev.filter(item => item !== id)
-        : [...prev, id]
+  const renderContent = () => {
+    if (loading) {
+      return renderSkeletonLoader();
+    }
+
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return (
+        <EmptyState>
+          <EmptyStateIcon>
+            <Package size={48} />
+          </EmptyStateIcon>
+          <EmptyStateText>No categories found</EmptyStateText>
+          <Button primary onClick={() => setIsModalOpen(true)}>
+            <Plus size={16} />
+            Add Your First Category
+          </Button>
+        </EmptyState>
+      );
+    }
+
+    return (
+      <Table>
+        <thead>
+          <tr>
+            <Th>Name</Th>
+            <Th>Description</Th>
+            <Th>Status</Th>
+            <Th>Actions</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {categories.map((category) => (
+            <tr key={category._id}>
+              <Td>{category.name}</Td>
+              <Td>{category.description}</Td>
+              <Td>
+                <ToggleSwitch>
+                  <input
+                    type="checkbox"
+                    checked={category.isActive}
+                    onChange={(e) => handleStatusChange(category, e.target.checked)}
+                  />
+                  <span className="slider" />
+                </ToggleSwitch>
+              </Td>
+              <Td>
+                <ButtonGroup>
+                  <Button onClick={() => handleEdit(category)}>
+                    Edit
+                  </Button>
+                  <Button onClick={() => handleDeleteClick(category)}>
+                    Delete
+                  </Button>
+                </ButtonGroup>
+              </Td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
     );
   };
 
-  const handleSubmit = () => {
-    const formData = {
-      ...categoryData,
-      image: categoryImage,
-      icon: categoryIcon
-    };
-    console.log('Saving category:', formData);
-  };
-
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
     <Container>
-      <CategoryTreeSection>
-        <CategoryHeader>
-          <h2>Category</h2>
-          <ActionButton>
-            Action
-            <ChevronDown size={16} />
-          </ActionButton>
-        </CategoryHeader>
+      <Header>
+        <Title>Categories</Title>
+        <Button primary onClick={() => setIsModalOpen(true)}>
+          <Plus size={16} />
+          Add Category
+        </Button>
+      </Header>
 
-        <SearchBox
-          type="text"
-          placeholder="Search Node"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      {renderContent()}
 
-        <TreeContainer>
-          {filteredCategories.map(category => (
-            <TreeItem key={category.id}>
-              <div className="item-content" onClick={() => toggleExpand(category.id)}>
-                {expandedItems.includes(category.id) ? 
-                  <ChevronDown size={16} /> : 
-                  <ChevronRight size={16} />
-                }
-                <Folder className="folder-icon" size={16} />
-                <span className="category-label">{category.name}</span>
-              </div>
-            </TreeItem>
-          ))}
-        </TreeContainer>
-      </CategoryTreeSection>
+      {isModalOpen && (
+        <Modal>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>
+                {editingCategory ? 'Edit Category' : 'Add Category'}
+              </ModalTitle>
+              <CloseButton onClick={() => {
+                setIsModalOpen(false);
+                resetForm();
+              }}>
+                <X size={20} />
+              </CloseButton>
+            </ModalHeader>
 
-      <FormSection>
-        <FormHeader>Add Category</FormHeader>
+            <form onSubmit={handleSubmit}>
+              <FormGroup>
+                <label>Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    name: e.target.value
+                  }))}
+                  placeholder="Enter category name"
+                  required
+                />
+              </FormGroup>
 
-        <FormGroup>
-          <label className="required">Name</label>
-          <input
-            type="text"
-            name="name"
-            value={categoryData.name}
-            onChange={handleInputChange}
-            placeholder="Enter Category Name"
-          />
-        </FormGroup>
+              <FormGroup>
+                <label>Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    description: e.target.value
+                  }))}
+                  placeholder="Enter category description"
+                  required
+                />
+              </FormGroup>
 
-        <FormGroup>
-          <label>Description</label>
-          <textarea
-            name="description"
-            value={categoryData.description}
-            onChange={handleInputChange}
-            placeholder="Enter Category Description"
-          />
-        </FormGroup>
+              <FormGroup>
+                <label>Status</label>
+                <div style={{ marginTop: '0.5rem' }}>
+                  <ToggleSwitch>
+                    <input
+                      type="checkbox"
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        isActive: e.target.checked
+                      }))}
+                    />
+                    <span className="slider" />
+                  </ToggleSwitch>
+                </div>
+              </FormGroup>
 
-        <FormGroup>
-          <label>Commission Rate</label>
-          <div className="commission-input">
-            <input
-              type="number"
-              name="commissionRate"
-              value={categoryData.commissionRate}
-              onChange={handleInputChange}
-              placeholder="Enter Commission Rate"
-            />
-            <span className="percentage">%</span>
-          </div>
-          <div className="helper-text">*Define the percentage of earnings retained as commission.</div>
-        </FormGroup>
+              <ButtonGroup>
+                <Button type="button" onClick={() => {
+                  setIsModalOpen(false);
+                  resetForm();
+                }}>
+                  Cancel
+                </Button>
+                <Button type="submit" primary disabled={loading}>
+                  {loading ? 'Saving...' : editingCategory ? 'Update' : 'Save'}
+                </Button>
+              </ButtonGroup>
+            </form>
+          </ModalContent>
+        </Modal>
+      )}
 
-        <FormGroup>
-          <label>Select Parent</label>
-          <select
-            name="parent"
-            value={categoryData.parent}
-            onChange={handleInputChange}
-          >
-            <option value="">Select</option>
-            {categories.map(category => (
-              <option key={category.id} value={category.id}>{category.name}</option>
-            ))}
-          </select>
-        </FormGroup>
+      {isConfirmModalOpen && (
+        <Modal>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Confirm Action</ModalTitle>
+              <CloseButton onClick={() => {
+                setIsConfirmModalOpen(false);
+                setConfirmAction(null);
+              }}>
+                <X size={20} />
+              </CloseButton>
+            </ModalHeader>
 
-        <FormGroup>
-          <label>Image</label>
-          {categoryImage ? (
-            <ImagePreview>
-              <img src={categoryImage} alt="Category" />
-              <button onClick={() => handleRemoveImage('image')}>
-                <X size={12} />
-              </button>
-            </ImagePreview>
-          ) : (
-            <div 
-              className="upload-box" 
-              onClick={() => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = (e) => {
-                  if (e.target.files[0]) {
-                    handleImageUpload('image', e.target.files[0]);
-                  }
-                };
-                input.click();
-              }}
-            >
-              <ImageIcon size={24} />
-            </div>
-          )}
-        </FormGroup>
+            <ModalText>{confirmAction?.message}</ModalText>
 
-        <FormGroup>
-          <label>Icon</label>
-          {categoryIcon ? (
-            <ImagePreview>
-              <img src={categoryIcon} alt="Icon" />
-              <button onClick={() => handleRemoveImage('icon')}>
-                <X size={12} />
-              </button>
-            </ImagePreview>
-          ) : (
-            <div 
-              className="upload-box" 
-              onClick={() => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = (e) => {
-                  if (e.target.files[0]) {
-                    handleImageUpload('icon', e.target.files[0]);
-                  }
-                };
-                input.click();
-              }}
-            >
-              <ImageIcon size={24} />
-            </div>
-          )}
-        </FormGroup>
-
-        <FormGroup>
-          <label>Meta Title</label>
-          <input
-            type="text"
-            name="metaTitle"
-            value={categoryData.metaTitle}
-            onChange={handleInputChange}
-            placeholder="Enter Meta Title"
-          />
-        </FormGroup>
-
-        <FormGroup>
-          <label>Meta Description</label>
-          <textarea
-            name="metaDescription"
-            value={categoryData.metaDescription}
-            onChange={handleInputChange}
-            placeholder="Enter Meta Description"
-          />
-        </FormGroup>
-
-        <FormGroup>
-          <label>Status</label>
-          <div style={{ marginTop: '0.5rem' }}>
-          <ToggleSwitch>
-              <input
-                type="checkbox"
-                checked={categoryData.status}
-                onChange={(e) => setCategoryData(prev => ({ 
-                  ...prev, 
-                  status: e.target.checked 
-                }))}
-              />
-              <span className="slider" />
-            </ToggleSwitch>
-          </div>
-        </FormGroup>
-
-        <SaveButton onClick={handleSubmit}>Save</SaveButton>
-      </FormSection>
+            <ButtonGroup>
+              <Button onClick={() => {
+                setIsConfirmModalOpen(false);
+                setConfirmAction(null);
+              }}>
+                Cancel
+              </Button>
+              <Button primary onClick={handleConfirmAction}>
+                Confirm
+              </Button>
+            </ButtonGroup>
+          </ModalContent>
+        </Modal>
+      )}
     </Container>
   );
 };

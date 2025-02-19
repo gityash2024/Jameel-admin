@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import styled from 'styled-components';
-import { Download, Upload, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Download, Upload, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { fetchTags, createTag, updateTag, deleteTag, updateTagStatus, bulkDeleteTags } from '../features/tags/tagSlice';
+import { toast } from 'react-hot-toast';
 
 const Container = styled.div`
   padding: 2rem;
@@ -31,11 +34,17 @@ const Button = styled.button`
   padding: 0.5rem 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 0.375rem;
-  background: white;
+  background: ${props => props.primary ? '#000' : 'white'};
+  color: ${props => props.primary ? 'white' : '#1a202c'};
   font-size: 0.875rem;
 
   &:hover {
-    background: #f7fafc;
+    background: ${props => props.primary ? '#1a1a1a' : '#f7fafc'};
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
@@ -179,46 +188,185 @@ const CheckboxInput = styled.input`
   cursor: pointer;
 `;
 
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+`;
+
+const ModalContent = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 500px;
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a202c;
+  }
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #4a5568;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+
+    &:focus {
+      outline: none;
+      border-color: #4299e1;
+    }
+  }
+
+  textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+`;
+
 const TagsProduct = () => {
+  const dispatch = useDispatch();
+  const { tags, loading } = useSelector((state) => state.tag);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [selectedTags, setSelectedTags] = useState([]);
-  const [tags, setTags] = useState([
-    { id: 1, name: 'Urban Cycling', createdAt: '17/6/2024 2:13 pm', status: true },
-    { id: 2, name: 'Pedal Power', createdAt: '17/6/2024 2:12 pm', status: true },
-    { id: 3, name: 'Childhood Adventures', createdAt: '17/6/2024 2:11 pm', status: true },
-    { id: 4, name: 'Sunset Soft Board', createdAt: '6/6/2024 4:29 pm', status: true },
-    { id: 5, name: 'Eco Friendly Surfboard', createdAt: '6/6/2024 4:28 pm', status: true },
-    { id: 6, name: 'Soft Top Surfboard', createdAt: '6/6/2024 4:27 pm', status: true },
-    { id: 7, name: 'Simulation Games', createdAt: '29/5/2024 1:34 pm', status: true },
-    { id: 8, name: 'Console Gaming', createdAt: '29/5/2024 1:33 pm', status: true },
-    { id: 9, name: 'SciFi Games', createdAt: '29/5/2024 1:31 pm', status: true },
-    { id: 10, name: 'Performance upgrades', createdAt: '29/5/2024 1:15 pm', status: true },
-    { id: 11, name: 'Exterior accessories', createdAt: '29/5/2024 1:15 pm', status: true },
-    { id: 12, name: 'Automotive parts', createdAt: '29/5/2024 1:14 pm', status: true },
-    { id: 13, name: 'Slip-Resistant Shoes', createdAt: '25/5/2024 6:06 pm', status: true },
-    { id: 14, name: 'Breathable Shoes', createdAt: '25/5/2024 6:05 pm', status: true },
-    { id: 15, name: 'Vegan Footwear', createdAt: '25/5/2024 6:02 pm', status: true }
-  ]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingTag, setEditingTag] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    metaTitle: '',
+    metaDescription: '',
+    metaKeywords: '',
+    isActive: true
+  });
 
-  const handleToggleStatus = (id) => {
-    setTags(tags.map(tag => 
-      tag.id === id ? { ...tag, status: !tag.status } : tag
-    ));
+  useEffect(() => {
+    dispatch(fetchTags());
+  }, [dispatch]);
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      metaTitle: '',
+      metaDescription: '',
+      metaKeywords: '',
+      isActive: true
+    });
+    setEditingTag(null);
   };
 
-  const handleEdit = (id) => {
-    console.log('Edit tag:', id);
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      await dispatch(updateTagStatus({ id, status: !currentStatus })).unwrap();
+      toast.success('Tag status updated successfully');
+    } catch (error) {
+      toast.error('Failed to update tag status');
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleEdit = (tag) => {
+    setEditingTag(tag);
+    setFormData({
+      name: tag.name,
+      description: tag.description || '',
+      metaTitle: tag.metaTitle || '',
+      metaDescription: tag.metaDescription || '',
+      metaKeywords: tag.metaKeywords?.join(', ') || '',
+      isActive: tag.isActive
+    });
+    setModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this tag?')) {
-      setTags(tags.filter(tag => tag.id !== id));
+      try {
+        await dispatch(deleteTag(id)).unwrap();
+        toast.success('Tag deleted successfully');
+      } catch (error) {
+        toast.error('Failed to delete tag');
+      }
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTags.length === 0) {
+      toast.error('Please select tags to delete');
+      return;
+    }
+
+    if (window.confirm(`Are you sure you want to delete ${selectedTags.length} tags?`)) {
+      try {
+        await dispatch(bulkDeleteTags(selectedTags)).unwrap();
+        setSelectedTags([]);
+        toast.success('Tags deleted successfully');
+      } catch (error) {
+        toast.error('Failed to delete tags');
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const tagData = {
+      ...formData,
+      metaKeywords: formData.metaKeywords.split(',').map(k => k.trim())
+    };
+
+    try {
+      if (editingTag) {
+        await dispatch(updateTag({ id: editingTag._id, tagData })).unwrap();
+        toast.success('Tag updated successfully');
+      } else {
+        await dispatch(createTag(tagData)).unwrap();
+        toast.success('Tag created successfully');
+      }
+      setModalOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error(editingTag ? 'Failed to update tag' : 'Failed to create tag');
     }
   };
 
   const handleSelectAll = (e) => {
-    setSelectedTags(e.target.checked ? tags.map(tag => tag.id) : []);
+    setSelectedTags(e.target.checked ? tags.map(tag => tag._id) : []);
   };
 
   const handleSelectTag = (id) => {
@@ -227,27 +375,6 @@ const TagsProduct = () => {
         ? prev.filter(tagId => tagId !== id)
         : [...prev, id]
     );
-  };
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.csv,.xlsx';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        console.log('Import file:', file);
-      }
-    };
-    input.click();
-  };
-
-  const handleExport = () => {
-    console.log('Export tags');
-  };
-
-  const handleAddTag = () => {
-    console.log('Add new tag');
   };
 
   const filteredTags = tags.filter(tag =>
@@ -259,15 +386,11 @@ const TagsProduct = () => {
       <Header>
         <h1>Tags</h1>
         <div className="button-group">
-          <Button onClick={handleImport}>
-            <Upload size={16} />
-            Import
+          <Button onClick={handleBulkDelete} disabled={selectedTags.length === 0}>
+            <Trash2 size={16} />
+            Delete Selected
           </Button>
-          <Button onClick={handleExport}>
-            <Download size={16} />
-            Export
-          </Button>
-          <Button onClick={handleAddTag}>
+          <Button onClick={() => { resetForm(); setModalOpen(true); }}>
             <Plus size={16} />
             Add Tag
           </Button>
@@ -308,39 +431,39 @@ const TagsProduct = () => {
               />
             </Th>
             <Th>Name</Th>
-            <Th>Create At</Th>
+            <Th>Created At</Th>
             <Th>Status</Th>
             <Th>Action</Th>
           </tr>
         </thead>
         <tbody>
           {filteredTags.map(tag => (
-            <tr key={tag.id}>
+            <tr key={tag._id}>
               <Td>
                 <CheckboxInput
                   type="checkbox"
-                  checked={selectedTags.includes(tag.id)}
-                  onChange={() => handleSelectTag(tag.id)}
+                  checked={selectedTags.includes(tag._id)}
+                  onChange={() => handleSelectTag(tag._id)}
                 />
               </Td>
               <Td>{tag.name}</Td>
-              <Td>{tag.createdAt}</Td>
+              <Td>{new Date(tag.createdAt).toLocaleString()}</Td>
               <Td>
                 <ToggleSwitch>
                   <input
                     type="checkbox"
-                    checked={tag.status}
-                    onChange={() => handleToggleStatus(tag.id)}
+                    checked={tag.isActive}
+                    onChange={() => handleToggleStatus(tag._id, tag.isActive)}
                   />
                   <span className="slider" />
                 </ToggleSwitch>
               </Td>
               <Td>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <ActionButton onClick={() => handleEdit(tag.id)}>
+                  <ActionButton onClick={() => handleEdit(tag)}>
                     <Pencil size={16} />
                   </ActionButton>
-                  <ActionButton delete onClick={() => handleDelete(tag.id)}>
+                  <ActionButton delete onClick={() => handleDelete(tag._id)}>
                     <Trash2 size={16} />
                   </ActionButton>
                 </div>
@@ -349,6 +472,80 @@ const TagsProduct = () => {
           ))}
         </tbody>
       </Table>
+
+      {modalOpen && (
+        <Modal>
+          <ModalContent>
+            <ModalHeader>
+              <h2>{editingTag ? 'Edit Tag' : 'Add Tag'}</h2>
+              <Button onClick={() => { setModalOpen(false); resetForm(); }}>
+                <X size={16} />
+              </Button>
+            </ModalHeader>
+            <form onSubmit={handleSubmit}>
+              <FormGroup>
+                <label>Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Meta Title</label>
+                <input
+                  type="text"
+                  value={formData.metaTitle}
+                  onChange={(e) => setFormData(prev => ({ ...prev, metaTitle: e.target.value }))}
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Meta Description</label>
+                <textarea
+                  value={formData.metaDescription}
+                  onChange={(e) => setFormData(prev => ({ ...prev, metaDescription: e.target.value }))}
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Meta Keywords</label>
+                <input
+                  type="text"
+                  value={formData.metaKeywords}
+                  onChange={(e) => setFormData(prev => ({ ...prev, metaKeywords: e.target.value }))}
+                  placeholder="Enter keywords separated by commas"
+                />
+              </FormGroup>
+              <FormGroup>
+                <label>Status</label>
+                <ToggleSwitch>
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                  />
+                  <span className="slider" />
+                </ToggleSwitch>
+              </FormGroup>
+              <ButtonGroup>
+                <Button type="button" onClick={() => { setModalOpen(false); resetForm(); }}>
+                  Cancel
+                </Button>
+                <Button type="submit" primary disabled={loading}>
+                  {loading ? 'Saving...' : editingTag ? 'Update' : 'Save'}
+                </Button>
+              </ButtonGroup>
+            </form>
+          </ModalContent>
+        </Modal>
+      )}
     </Container>
   );
 };
