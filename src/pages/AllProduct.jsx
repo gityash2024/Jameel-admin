@@ -1,57 +1,69 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
-import { Edit, Trash2, Eye, Download, Upload, Plus } from 'lucide-react';
-import ring from '../assets/ring.svg';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import styled, { keyframes } from 'styled-components';
+import { Edit, Trash2, Eye, Download, Plus, X } from 'lucide-react';
+import { fetchProducts, deleteProduct, updateProductStatus } from '../features/products/productSlice';
+import { toast } from 'react-hot-toast';
+
+const shimmer = keyframes`
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+`;
 
 const Container = styled.div`
-  padding: 24px;
+  padding: 2rem;
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 2rem;
 `;
 
 const Title = styled.h1`
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #1a237e;
+  color: #1a202c;
 `;
 
 const ButtonGroup = styled.div`
   display: flex;
-  gap: 12px;
+  gap: 1rem;
 `;
 
 const Button = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   
-  ${props => props.variant === 'primary' ? `
-    background: #1a237e;
+  ${props => props.primary ? `
+    background: #000;
     color: white;
     border: none;
     
     &:hover {
-      background: #151b4f;
+      background: #1a1a1a;
+    }
+    
+    &:disabled {
+      background: #ccc;
+      cursor: not-allowed;
     }
   ` : `
     background: white;
-    color: #1a237e;
-    border: 1px solid #1a237e;
+    color: #1a202c;
+    border: 1px solid #e2e8f0;
     
     &:hover {
-      background: #f5f7fb;
+      background: #f7fafc;
     }
   `}
 `;
@@ -60,114 +72,112 @@ const FilterSection = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  gap: 16px;
+  margin-bottom: 2rem;
+  gap: 1rem;
 `;
 
 const FilterGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 1rem;
 `;
 
 const Select = styled.select`
-  padding: 8px 12px;
+  padding: 0.75rem;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  outline: none;
   min-width: 200px;
   
   &:focus {
-    outline: none;
-    border-color: #1a237e;
+    border-color: #4299e1;
   }
 `;
 
 const SearchInput = styled.input`
-  padding: 8px 12px;
+  padding: 0.75rem;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 14px;
-  min-width: 200px;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  outline: none;
+  min-width: 240px;
   
   &:focus {
-    outline: none;
-    border-color: #1a237e;
+    border-color: #4299e1;
   }
 `;
 
 const ItemsPerPage = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #64748b;
-  font-size: 14px;
+  gap: 0.5rem;
+  color: #4a5568;
+  font-size: 0.875rem;
 `;
 
 const Table = styled.table`
   width: 100%;
   border-collapse: collapse;
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
 `;
 
 const Th = styled.th`
   text-align: left;
-  padding: 12px;
+  padding: 1rem;
   background: #f8fafc;
-  color: #1a237e;
+  color: #1a202c;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 0.875rem;
   border-bottom: 1px solid #e2e8f0;
-  
-  &:first-child {
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
-  }
-  
-  &:last-child {
-    border-top-right-radius: 8px;
-    border-bottom-right-radius: 8px;
-  }
+  white-space: nowrap;
 `;
 
 const Td = styled.td`
-  padding: 12px;
-  font-size: 14px;
-  color: #334155;
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #1a202c;
   border-bottom: 1px solid #e2e8f0;
 `;
 
 const ProductImage = styled.img`
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
+  width: 48px;
+  height: 48px;
+  border-radius: 0.5rem;
   object-fit: cover;
 `;
 
 const StockBadge = styled.span`
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  background: #dcfce7;
-  color: #16a34a;
-`;
-
-const ActionGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  ${props => {
+    switch (props.status) {
+      case 'in_stock':
+        return 'background: #DEF7EC; color: #03543F;';
+      case 'out_of_stock':
+        return 'background: #FDE8E8; color: #9B1C1C;';
+      case 'on_backorder':
+        return 'background: #FEF3C7; color: #92400E;';
+      default:
+        return 'background: #E5E7EB; color: #374151;';
+    }
+  }}
 `;
 
 const ActionButton = styled.button`
-  padding: 6px;
+  padding: 0.5rem;
   border: none;
   background: none;
-  color: #64748b;
+  color: ${props => props.delete ? '#E53E3E' : '#3182CE'};
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    color: #1a237e;
+    opacity: 0.7;
   }
 `;
 
@@ -216,96 +226,219 @@ const ToggleSlider = styled.span`
   }
 `;
 
-const mockProducts = [
-  {
-    id: 1,
-    image: ring,
-    name: "Gym Coords Set",
-    sku: "SP18",
-    price: 15.00,
-    stock: "In Stock",
-    approved: true,
-    status: true
-  },
-  {
-    id: 2,
-    image: ring,
-    name: "Mini Dress",
-    sku: "FASH01",
-    price: 14.70,
-    stock: "In Stock",
-    approved: true,
-    status: true
-  },
-  // Add more mock products as needed
-];
+const Modal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
 
-const AllProduct = () => {
-  const [products, setProducts] = useState(mockProducts);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+const ModalContent = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  width: 100%;
+  max-width: 500px;
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+`;
+
+const ModalTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a202c;
+`;
+
+const ModalText = styled.p`
+  color: #4a5568;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+`;
+
+const SkeletonCell = styled.div`
+  height: 20px;
+  width: ${props => props.width || '100%'};
+  background: #f0f0f0;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #f0f0f0 25%, #f7f7f7 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: ${shimmer} 1.5s infinite;
+  }
+`;
+
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 0.5rem;
+  text-align: center;
+`;
+
+const AllProducts = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { products, loading } = useSelector((state) => state.product);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const navigate=useNavigate()
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filters, setFilters] = useState({
     type: '',
-    category: '',
-    brand: ''
+    brand: '',
+    status: ''
   });
 
-  const handleApproveToggle = (productId) => {
-    setProducts(prev => prev.map(product => 
-      product.id === productId 
-        ? { ...product, approved: !product.approved }
-        : product
-    ));
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
   };
 
-  const handleStatusToggle = (productId) => {
-    setProducts(prev => prev.map(product => 
-      product.id === productId 
-        ? { ...product, status: !product.status }
-        : product
-    ));
+  const handleFilterChange = (e) => {
+    setFilters(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
-  const handleEdit = (productId) => {
-    // Handle edit action
-    console.log('Edit product:', productId);
+  const handleStatusChange = (product, newStatus) => {
+    setConfirmAction({
+      type: 'status',
+      product,
+      newStatus,
+      message: `Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this product?`
+    });
+    setIsConfirmModalOpen(true);
   };
 
-  const handleDelete = (productId) => {
-    // Handle delete action
-    console.log('Delete product:', productId);
+  const handleDeleteClick = (product) => {
+    setConfirmAction({
+      type: 'delete',
+      product,
+      message: 'Are you sure you want to delete this product?'
+    });
+    setIsConfirmModalOpen(true);
   };
 
-  const handleView = (productId) => {
-    // Handle view action
-    console.log('View product:', productId);
-  };
-
-  const handleImport = () => {
-    // Handle import action
-    console.log('Import products');
+  const handleConfirmAction = async () => {
+    try {
+      if (confirmAction.type === 'delete') {
+        await dispatch(deleteProduct(confirmAction.product._id)).unwrap();
+        toast.success('Product deleted successfully');
+      } else if (confirmAction.type === 'status') {
+        await dispatch(updateProductStatus({
+          id: confirmAction.product._id,
+          status: confirmAction.newStatus
+        })).unwrap();
+        toast.success('Product status updated successfully');
+      }
+      dispatch(fetchProducts());
+    } catch (error) {
+      toast.error(error.message || 'Action failed');
+    }
+    setIsConfirmModalOpen(false);
+    setConfirmAction(null);
   };
 
   const handleExport = () => {
-    // Handle export action
-    console.log('Export products');
+    const csv = [
+      ['Name', 'SKU', 'Brand', 'Price', 'Stock', 'Status'],
+      ...products.map(product => [
+        product.name,
+        product.sku,
+        product.brand,
+        product.regularPrice,
+        product.stockQuantity,
+        product.stockStatus
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'products.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   };
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = !filters.type || product.type === filters.type;
+    const matchesBrand = !filters.brand || product.brand === filters.brand;
+    const matchesStatus = !filters.status || product.stockStatus === filters.status;
+    
+    return matchesSearch && matchesType && matchesBrand && matchesStatus;
+  });
+
+  const renderSkeletonLoader = () => (
+    <Table>
+      <thead>
+        <tr>
+          <Th>Image</Th>
+          <Th>Name</Th>
+          <Th>SKU</Th>
+          <Th>Price</Th>
+          <Th>Stock</Th>
+          <Th>Status</Th>
+          <Th>Actions</Th>
+        </tr>
+      </thead>
+      <tbody>
+        {[1, 2, 3, 4, 5].map((index) => (
+          <tr key={index}>
+            <Td><SkeletonCell width="48px" style={{ height: '48px' }} /></Td>
+            <Td><SkeletonCell width="200px" /></Td>
+            <Td><SkeletonCell width="100px" /></Td>
+            <Td><SkeletonCell width="80px" /></Td>
+            <Td><SkeletonCell width="100px" /></Td>
+            <Td><SkeletonCell width="80px" /></Td>
+            <Td><SkeletonCell width="120px" /></Td>
+          </tr>
+        ))}
+      </tbody>
+    </Table>
+  );
 
   return (
     <Container>
       <Header>
         <Title>Products</Title>
         <ButtonGroup>
-          <Button onClick={handleImport}>
-            <Upload size={16} />
-            Import
-          </Button>
           <Button onClick={handleExport}>
             <Download size={16} />
             Export
           </Button>
-          <Button onClick={() => navigate('/products/add')} variant="primary">
+          <Button primary onClick={() => navigate('/products/add')}>
             <Plus size={16} />
             Add Product
           </Button>
@@ -320,121 +453,148 @@ const AllProduct = () => {
               value={itemsPerPage}
               onChange={(e) => setItemsPerPage(Number(e.target.value))}
             >
-              <option value={15}>15</option>
+              <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
+              <option value={100}>100</option>
             </Select>
-            Items Per Page
+            items
           </ItemsPerPage>
         </FilterGroup>
 
         <FilterGroup>
-          <Select 
+          <Select
+            name="type"
             value={filters.type}
-            onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
+            onChange={handleFilterChange}
           >
-            <option value="">Select Product Type</option>
+            <option value="">All Types</option>
             <option value="physical">Physical</option>
             <option value="digital">Digital</option>
           </Select>
 
           <Select
-            value={filters.category}
-            onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
+            name="status"
+            value={filters.status}
+            onChange={handleFilterChange}
           >
-            <option value="">Select Categories</option>
-            <option value="clothing">Clothing</option>
-            <option value="accessories">Accessories</option>
-          </Select>
-
-          <Select
-            value={filters.brand}
-            onChange={(e) => setFilters(prev => ({ ...prev, brand: e.target.value }))}
-          >
-            <option value="">Select Brands</option>
-            <option value="brand1">Brand 1</option>
-            <option value="brand2">Brand 2</option>
-          </Select>
+            <option value="">All Status</option>
+            <option value="in_stock">In Stock</option>
+            <option value="out_of_stock">Out of Stock</option>
+            <option value="on_backorder">On Backorder</option>
+            </Select>
 
           <SearchInput
             type="text"
-            placeholder="Search..."
+            placeholder="Search products..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearch}
           />
         </FilterGroup>
       </FilterSection>
 
-      <Table>
-        <thead>
-          <tr>
-            <Th style={{ width: '40px' }}>
-              <input type="checkbox" />
-            </Th>
-            <Th>Image</Th>
-            <Th>Name</Th>
-            <Th>SKU</Th>
-            <Th>Price</Th>
-            <Th>Stock</Th>
-            <Th>Approve</Th>
-            <Th>Status</Th>
-            <Th>Action</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map(product => (
-            <tr key={product.id}>
-              <Td>
-                <input type="checkbox" />
-              </Td>
-              <Td>
-                <ProductImage src={product.image} alt={product.name} />
-              </Td>
-              <Td>{product.name}</Td>
-              <Td>{product.sku}</Td>
-              <Td>${product.price.toFixed(2)}</Td>
-              <Td>
-                <StockBadge>{product.stock}</StockBadge>
-              </Td>
-              <Td>
-                <Toggle>
-                  <ToggleInput
-                    type="checkbox"
-                    checked={product.approved}
-                    onChange={() => handleApproveToggle(product.id)}
-                  />
-                  <ToggleSlider />
-                </Toggle>
-              </Td>
-              <Td>
-                <Toggle>
-                  <ToggleInput
-                    type="checkbox"
-                    checked={product.status}
-                    onChange={() => handleStatusToggle(product.id)}
-                  />
-                  <ToggleSlider />
-                </Toggle>
-              </Td>
-              <Td>
-                <ActionGroup>
-                  <ActionButton onClick={() => handleEdit(product.id)}>
-                    <Edit size={16} />
-                  </ActionButton>
-                  <ActionButton onClick={() => handleDelete(product.id)}>
-                    <Trash2 size={16} />
-                  </ActionButton>
-                  <ActionButton onClick={() => handleView(product.id)}>
-                    <Eye size={16} />
-                  </ActionButton>
-                </ActionGroup>
-              </Td>
+      {loading ? (
+        renderSkeletonLoader()
+      ) : filteredProducts.length === 0 ? (
+        <EmptyState>
+          <Title>No products found</Title>
+          <Button primary onClick={() => navigate('/products/add')} style={{ marginTop: '1rem' }}>
+            <Plus size={16} />
+            Add Your First Product
+          </Button>
+        </EmptyState>
+      ) : (
+        <Table>
+          <thead>
+            <tr>
+              <Th>Image</Th>
+              <Th>Name</Th>
+              <Th>SKU</Th>
+              <Th>Price</Th>
+              <Th>Stock</Th>
+              <Th>Status</Th>
+              <Th>Actions</Th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {filteredProducts.slice(0, itemsPerPage).map((product) => (
+              <tr key={product._id}>
+                <Td>
+                  <ProductImage 
+                    src={product.images?.[0]?.url || '/placeholder.png'} 
+                    alt={product.name}
+                  />
+                </Td>
+                <Td>{product.name}</Td>
+                <Td>{product.sku}</Td>
+                <Td>${product.regularPrice.toFixed(2)}</Td>
+                <Td>
+                  <StockBadge status={product.stockStatus}>
+                    {product.stockStatus === 'in_stock' ? 'In Stock' :
+                     product.stockStatus === 'out_of_stock' ? 'Out of Stock' :
+                     'On Backorder'}
+                  </StockBadge>
+                </Td>
+                <Td>
+                  <Toggle>
+                    <ToggleInput
+                      type="checkbox"
+                      checked={product.isActive}
+                      onChange={(e) => handleStatusChange(product, e.target.checked)}
+                    />
+                    <ToggleSlider />
+                  </Toggle>
+                </Td>
+                <Td>
+                  <ButtonGroup>
+                    <ActionButton onClick={() => navigate(`/products/edit/${product._id}`)}>
+                      <Edit size={16} />
+                    </ActionButton>
+                    <ActionButton delete onClick={() => handleDeleteClick(product)}>
+                      <Trash2 size={16} />
+                    </ActionButton>
+                    <ActionButton onClick={() => navigate(`/products/${product._id}`)}>
+                      <Eye size={16} />
+                    </ActionButton>
+                  </ButtonGroup>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
+
+      {isConfirmModalOpen && (
+        <Modal>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Confirm Action</ModalTitle>
+              <Button onClick={() => {
+                setIsConfirmModalOpen(false);
+                setConfirmAction(null);
+              }}>
+                <X size={20} />
+              </Button>
+            </ModalHeader>
+
+            <ModalText>{confirmAction?.message}</ModalText>
+
+            <ButtonGroup>
+              <Button onClick={() => {
+                setIsConfirmModalOpen(false);
+                setConfirmAction(null);
+              }}>
+                Cancel
+              </Button>
+              <Button primary onClick={handleConfirmAction}>
+                Confirm
+              </Button>
+            </ButtonGroup>
+          </ModalContent>
+        </Modal>
+      )}
     </Container>
   );
 };
 
-export default AllProduct;
+export default AllProducts;

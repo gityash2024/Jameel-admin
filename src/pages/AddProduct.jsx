@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { Settings, Image as ImageIcon, Package, Sliders, Search, Truck, ToggleLeft, Code, Upload, X } from 'lucide-react';
-import { createProduct } from '../features/products/productSlice';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
+import {
+  Settings,
+  Image as ImageIcon,
+  Package,
+  ToggleLeft
+} from "lucide-react";
+import { createProduct } from "../features/products/productSlice";
+import { fetchCategories } from "../features/category/categorySlice";
+import { fetchTags } from "../features/tags/tagSlice";
+import { toast } from "react-hot-toast";
 
 const Container = styled.div`
   display: grid;
@@ -25,8 +32,8 @@ const MenuItem = styled.button`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: ${props => props.active ? '#f1f5f9' : 'transparent'};
-  color: ${props => props.active ? '#000' : '#64748b'};
+  background: ${(props) => (props.active ? "#f1f5f9" : "transparent")};
+  color: ${(props) => (props.active ? "#000" : "#64748b")};
   border: none;
   text-align: left;
   cursor: pointer;
@@ -138,13 +145,16 @@ const Button = styled.button`
   font-size: 0.875rem;
   font-weight: 500;
   transition: all 0.2s;
-  ${props => props.primary ? `
+  ${(props) =>
+    props.primary
+      ? `
     background: #000;
     color: white;
     border: none;
     &:hover { background: #1a1a1a; }
     &:disabled { background: #ccc; cursor: not-allowed; }
-  ` : `
+  `
+      : `
     background: white;
     color: #1a202c;
     border: 1px solid #e2e8f0;
@@ -177,7 +187,7 @@ const ImagePreview = styled.div`
   padding-top: 100%;
   border-radius: 0.5rem;
   overflow: hidden;
-  
+
   img {
     position: absolute;
     top: 0;
@@ -197,18 +207,11 @@ const ImagePreview = styled.div`
     border-radius: 50%;
     padding: 0.25rem;
     cursor: pointer;
-    
+
     &:hover {
       background: rgba(0, 0, 0, 0.7);
     }
   }
-`;
-
-const HelperText = styled.div`
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  color: #718096;
-  font-style: italic;
 `;
 
 const Toggle = styled.label`
@@ -222,11 +225,11 @@ const ToggleInput = styled.input`
   opacity: 0;
   width: 0;
   height: 0;
-  
+
   &:checked + span {
     background-color: #1a237e;
   }
-  
+
   &:checked + span:before {
     transform: translateX(20px);
   }
@@ -242,7 +245,7 @@ const ToggleSlider = styled.span`
   background-color: #e2e8f0;
   transition: 0.4s;
   border-radius: 34px;
-  
+
   &:before {
     position: absolute;
     content: "";
@@ -256,111 +259,136 @@ const ToggleSlider = styled.span`
   }
 `;
 
+const HelperText = styled.div`
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #718096;
+  font-style: italic;
+`;
+
 const AddProduct = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading } = useSelector((state) => state.product);
-  const [activeSection, setActiveSection] = useState('general');
+  const { categories } = useSelector((state) => state.category);
+  const { tags } = useSelector((state) => state.tag);
+  const [activeSection, setActiveSection] = useState("general");
   const [images, setImages] = useState([]);
-  
+
   const [formData, setFormData] = useState({
-    name: '',
-    sku: '',
-    description: '',
-    shortDescription: '',
-    type: 'physical',
-    category: '',
-    brand: '',
-    regularPrice: '',
-    salePrice: '',
-    stockQuantity: '',
-    lowStockThreshold: '10',
-    stockStatus: 'in_stock',
+    name: "",
+    sku: "",
+    description: "",
+    shortDescription: "",
+    type: "physical",
+    brand: "",
+    regularPrice: "",
+    salePrice: "",
+    stockQuantity: "",
+    lowStockThreshold: "10",
+    stockStatus: "in_stock",
+    category: "",
+    tags: [],
     isActive: true,
     isFeatured: false,
-    isNewArrival: false,
-    dimensions: {
-      length: '',
-      width: '',
-      height: '',
-      unit: 'cm'
-    },
-    weight: {
-      value: '',
-      unit: 'g'
-    },
-    metaTitle: '',
-    metaDescription: '',
-    metaKeywords: [],
-    specifications: [],
-    attributes: []
+    isNewArrival: false
   });
 
+  useEffect(() => {
+    dispatch(fetchCategories());
+    dispatch(fetchTags());
+  }, [dispatch]);
+
   const menuItems = [
-    { id: 'general', label: 'General', icon: Settings },
-    { id: 'images', label: 'Product Images', icon: ImageIcon },
-    { id: 'inventory', label: 'Inventory', icon: Package },
-    { id: 'variants', label: 'Variants', icon: Sliders },
-    { id: 'shipping', label: 'Shipping', icon: Truck },
-    { id: 'seo', label: 'SEO', icon: Search },
-    { id: 'status', label: 'Status', icon: ToggleLeft }
+    { id: "general", label: "General", icon: Settings },
+    { id: "images", label: "Product Images", icon: ImageIcon },
+    { id: "inventory", label: "Inventory", icon: Package },
+    { id: "status", label: "Status", icon: ToggleLeft }
   ];
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
+
+    if (name === "tags") {
+      const selectedTags = Array.from(
+        e.target.selectedOptions,
+        (option) => option.value
+      );
+      setFormData((prev) => ({
         ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: type === 'number' ? Number(value) : value
-        }
+        tags: selectedTags
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : 
-                type === 'number' ? Number(value) : value
+        [name]:
+          type === "checkbox"
+            ? checked
+            : type === "number"
+            ? Number(value)
+            : value
       }));
     }
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    const newImages = files.map(file => ({
-      file,
-      preview: URL.createObjectURL(file)
-    }));
-    setImages(prev => [...prev, ...newImages]);
+    for (const file of files) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch(
+          "https://chirag-backend.onrender.com/api/files/upload",
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to upload file: ${response.statusText}`);
+        }
+        const responseData = await response.json();
+        setImages((prev) => [
+          ...prev,
+          {
+            file,
+            preview: responseData.fileUrl,
+            url: responseData.fileUrl
+          }
+        ]);
+      } catch (error) {
+        toast.error(`Error uploading file: ${error.message}`);
+      }
+    }
   };
 
   const removeImage = (index) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
+    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
     const formDataToSend = new FormData();
-    
-    Object.keys(formData).forEach(key => {
-      if (typeof formData[key] === 'object' && !Array.isArray(formData[key])) {
-        formDataToSend.append(key, JSON.stringify(formData[key]));
-      } else {
-        formDataToSend.append(key, formData[key]);
-      }
+
+    Object.keys(formData).forEach((key) => {
+      formDataToSend.append(key, formData[key]);
     });
 
-    images.forEach((image, index) => {
-      formDataToSend.append(`images`, image.file);
-    });
+    formDataToSend.append(
+      "images",
+      JSON.stringify(
+        images.map((img) => ({
+          url: img.url,
+          alt: img.file.name
+        }))
+      )
+    );
 
     try {
       await dispatch(createProduct(formDataToSend)).unwrap();
-      toast.success('Product created successfully');
-      navigate('/products');
+      toast.success("Product created successfully");
+      navigate("/products");
     } catch (error) {
-      toast.error(error.message || 'Error creating product');
+      toast.error(error.message || "Error creating product");
     }
   };
 
@@ -374,6 +402,7 @@ const AddProduct = () => {
           value={formData.name}
           onChange={handleInputChange}
           placeholder="Enter product name"
+          required
         />
       </FormGroup>
 
@@ -385,6 +414,7 @@ const AddProduct = () => {
           value={formData.sku}
           onChange={handleInputChange}
           placeholder="Enter SKU"
+          required
         />
       </FormGroup>
 
@@ -395,6 +425,7 @@ const AddProduct = () => {
           value={formData.shortDescription}
           onChange={handleInputChange}
           placeholder="Enter short description"
+          required
         />
         <HelperText>Maximum 1000 characters</HelperText>
       </FormGroup>
@@ -406,16 +437,13 @@ const AddProduct = () => {
           value={formData.description}
           onChange={handleInputChange}
           placeholder="Enter full description"
+          required
         />
       </FormGroup>
 
       <FormGroup>
         <label className="required">Type</label>
-        <Select
-          name="type"
-          value={formData.type}
-          onChange={handleInputChange}
-        >
+        <Select name="type" value={formData.type} onChange={handleInputChange}>
           <option value="physical">Physical Product</option>
           <option value="digital">Digital Product</option>
         </Select>
@@ -429,6 +457,7 @@ const AddProduct = () => {
           value={formData.brand}
           onChange={handleInputChange}
           placeholder="Enter brand name"
+          required
         />
       </FormGroup>
 
@@ -442,6 +471,7 @@ const AddProduct = () => {
           placeholder="Enter regular price"
           min="0"
           step="0.01"
+          required
         />
       </FormGroup>
 
@@ -457,6 +487,39 @@ const AddProduct = () => {
           step="0.01"
         />
       </FormGroup>
+
+      <FormGroup>
+        <label className="required">Category</label>
+        <Select
+          name="category"
+          value={formData.category}
+          onChange={handleInputChange}
+          required
+        >
+          <option value="">Select a category</option>
+          {categories.map((category) => (
+            <option key={category._id} value={category._id}>
+              {category.name}
+            </option>
+          ))}
+        </Select>
+      </FormGroup>
+
+      <FormGroup>
+        <label>Tags</label>
+        <Select
+          name="tags"
+          value={formData.tags}
+          onChange={handleInputChange}
+          multiple
+        >
+          {tags.map((tag) => (
+            <option key={tag._id} value={tag._id}>
+              {tag.name}
+            </option>
+          ))}
+        </Select>
+      </FormGroup>
     </>
   );
 
@@ -464,8 +527,10 @@ const AddProduct = () => {
     <>
       <FormGroup>
         <label className="required">Product Images</label>
-        <ImageUploadArea onClick={() => document.getElementById('imageInput').click()}>
-          <Upload size={48} color="#64748b" />
+        <ImageUploadArea
+          onClick={() => document.getElementById("imageInput").click()}
+        >
+          <ImageIcon size={48} color="#64748b" />
           <p>Click to upload or drag and drop</p>
           <input
             id="imageInput"
@@ -480,9 +545,7 @@ const AddProduct = () => {
           {images.map((image, index) => (
             <ImagePreview key={index}>
               <img src={image.preview} alt={`Preview ${index + 1}`} />
-              <button onClick={() => removeImage(index)}>
-                <X size={16} />
-              </button>
+              <button onClick={() => removeImage(index)}>×</button>
             </ImagePreview>
           ))}
         </ImagePreviewContainer>
@@ -501,6 +564,7 @@ const AddProduct = () => {
           onChange={handleInputChange}
           placeholder="Enter stock quantity"
           min="0"
+          required
         />
       </FormGroup>
 
@@ -530,124 +594,11 @@ const AddProduct = () => {
       </FormGroup>
     </>
   );
-
-  const renderShippingSection = () => (
-    <>
-      <FormGroup>
-        <label>Dimensions</label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-          <Input
-            type="number"
-            name="dimensions.length"
-            value={formData.dimensions.length}
-            onChange={handleInputChange}
-            placeholder="Length"
-            min="0"
-            step="0.01"
-          />
-          <Input
-            type="number"
-            name="dimensions.width"
-            value={formData.dimensions.width}
-            onChange={handleInputChange}
-            placeholder="Width"
-            min="0"
-            step="0.01"
-          />
-          <Input
-            type="number"
-            name="dimensions.height"
-            value={formData.dimensions.height}
-            onChange={handleInputChange}
-            placeholder="Height"
-            min="0"
-            step="0.01"
-          />
-          <Select
-            name="dimensions.unit"
-            value={formData.dimensions.unit}
-            onChange={handleInputChange}
-          >
-            <option value="cm">cm</option>
-            <option value="in">in</option>
-          </Select>
-        </div>
-      </FormGroup>
-
-      <FormGroup>
-        <label>Weight</label>
-        <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '1rem' }}>
-          <Input
-            type="number"
-            name="weight.value"
-            value={formData.weight.value}
-            onChange={handleInputChange}
-            placeholder="Weight"
-            min="0"
-            step="0.01"
-          />
-          <Select
-            name="weight.unit"
-            value={formData.weight.unit}
-            onChange={handleInputChange}
-          >
-            <option value="g">g</option>
-            <option value="kg">kg</option>
-            <option value="lb">lb</option>
-            <option value="oz">oz</option>
-          </Select>
-        </div>
-      </FormGroup>
-    </>
-  );
-
-  const renderSEOSection = () => (
-    <>
-      <FormGroup>
-        <label>Meta Title</label>
-        <Input
-          type="text"
-          name="metaTitle"
-          value={formData.metaTitle}
-          onChange={handleInputChange}
-          placeholder="Enter meta title"
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <label>Meta Description</label>
-        <TextArea
-          name="metaDescription"
-          value={formData.metaDescription}
-          onChange={handleInputChange}
-          placeholder="Enter meta description"
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <label>Meta Keywords</label>
-        <Input
-          type="text"
-          name="metaKeywords"
-          value={formData.metaKeywords.join(', ')}
-          onChange={(e) => {
-            const keywords = e.target.value.split(',').map(k => k.trim());
-            setFormData(prev => ({
-              ...prev,
-              metaKeywords: keywords.filter(k => k)
-            }));
-          }}
-          placeholder="Enter keywords separated by commas"
-        />
-      </FormGroup>
-    </>
-  );
-
   const renderStatusSection = () => (
     <>
       <FormGroup>
         <label>Active Status</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <Toggle>
             <ToggleInput
               type="checkbox"
@@ -657,13 +608,12 @@ const AddProduct = () => {
             />
             <ToggleSlider />
           </Toggle>
-          <span>{formData.isActive ? 'Active' : 'Inactive'}</span>
+          <span>{formData.isActive ? "Active" : "Inactive"}</span>
         </div>
       </FormGroup>
-
       <FormGroup>
         <label>Featured Product</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <Toggle>
             <ToggleInput
               type="checkbox"
@@ -673,13 +623,13 @@ const AddProduct = () => {
             />
             <ToggleSlider />
           </Toggle>
-          <span>{formData.isFeatured ? 'Featured' : 'Not Featured'}</span>
+          <span>{formData.isFeatured ? "Featured" : "Not Featured"}</span>
         </div>
       </FormGroup>
 
       <FormGroup>
         <label>New Arrival</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <Toggle>
             <ToggleInput
               type="checkbox"
@@ -689,62 +639,66 @@ const AddProduct = () => {
             />
             <ToggleSlider />
           </Toggle>
-          <span>{formData.isNewArrival ? 'New Arrival' : 'Not New Arrival'}</span>
+          <span>
+            {formData.isNewArrival ? "New Arrival" : "Not New Arrival"}
+          </span>
         </div>
       </FormGroup>
     </>
   );
-
-  const renderActiveSection = () => {
-    switch (activeSection) {
-      case 'general':
-        return renderGeneralSection();
-      case 'images':
-        return renderImagesSection();
-      case 'inventory':
-        return renderInventorySection();
-      case 'shipping':
-        return renderShippingSection();
-      case 'seo':
-        return renderSEOSection();
-      case 'status':
-        return renderStatusSection();
-      default:
-        return renderGeneralSection();
-    }
-  };
-
   const validateForm = () => {
-    const requiredFields = ['name', 'sku', 'description', 'shortDescription', 'type', 'brand', 'regularPrice', 'stockQuantity'];
-    const missingFields = requiredFields.filter(field => !formData[field]);
-    
+    const requiredFields = [
+      "name",
+      "sku",
+      "description",
+      "shortDescription",
+      "type",
+      "brand",
+      "regularPrice",
+      "stockQuantity",
+      "category"
+    ];
+    const missingFields = requiredFields.filter((field) => !formData[field]);
     if (missingFields.length > 0) {
-      toast.error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      toast.error(
+        `Please fill in all required fields: ${missingFields.join(", ")}`
+      );
       return false;
     }
 
     if (images.length === 0) {
-      toast.error('Please add at least one product image');
+      toast.error("Please add at least one product image");
       return false;
     }
 
     return true;
   };
-
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case "general":
+        return renderGeneralSection();
+      case "images":
+        return renderImagesSection();
+      case "inventory":
+        return renderInventorySection();
+      case "status":
+        return renderStatusSection();
+      default:
+        return renderGeneralSection();
+    }
+  };
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validateForm()) {
       return;
     }
 
     handleSubmit();
   };
-
   return (
     <Container>
       <Sidebar>
-        {menuItems.map(item => (
+        {menuItems.map((item) => (
           <MenuItem
             key={item.id}
             active={activeSection === item.id}
@@ -755,17 +709,16 @@ const AddProduct = () => {
           </MenuItem>
         ))}
       </Sidebar>
-
       <form onSubmit={handleFormSubmit}>
         <FormSection>
           <FormHeader>Add Product</FormHeader>
           {renderActiveSection()}
           <ButtonGroup>
-            <Button type="button" onClick={() => navigate('/products')}>
+            <Button type="button" onClick={() => navigate("/products")}>
               Cancel
             </Button>
             <Button type="submit" primary disabled={loading}>
-              {loading ? 'Saving...' : 'Save Product'}
+              {loading ? "Saving..." : "Save Product"}
             </Button>
           </ButtonGroup>
         </FormSection>
@@ -773,5 +726,4 @@ const AddProduct = () => {
     </Container>
   );
 };
-
 export default AddProduct;

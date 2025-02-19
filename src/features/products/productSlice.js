@@ -1,8 +1,6 @@
-// src/features/products/productSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { productAPI } from '../../services/api';
 
-// Async thunks
 export const fetchProducts = createAsyncThunk(
   'product/fetchProducts',
   async (params) => {
@@ -43,27 +41,11 @@ export const deleteProduct = createAsyncThunk(
   }
 );
 
-export const createVariant = createAsyncThunk(
-  'product/createVariant',
-  async ({ productId, variantData }) => {
-    const response = await productAPI.createVariant(productId, variantData);
-    return response.data;
-  }
-);
-
-export const updateVariant = createAsyncThunk(
-  'product/updateVariant',
-  async ({ productId, variantId, variantData }) => {
-    const response = await productAPI.updateVariant(productId, variantId, variantData);
-    return response.data;
-  }
-);
-
-export const deleteVariant = createAsyncThunk(
-  'product/deleteVariant',
-  async ({ productId, variantId }) => {
-    await productAPI.deleteVariant(productId, variantId);
-    return { productId, variantId };
+export const updateProductStatus = createAsyncThunk(
+  'product/updateStatus',
+  async ({ id, status }) => {
+    const response = await productAPI.updateProductStatus(id, status);
+    return { id, status, data: response.data };
   }
 );
 
@@ -71,7 +53,7 @@ export const bulkDeleteProducts = createAsyncThunk(
   'product/bulkDelete',
   async (ids) => {
     await productAPI.bulkDeleteProducts(ids);
-    return ids;
+    return { ids };
   }
 );
 
@@ -80,12 +62,14 @@ const productSlice = createSlice({
   initialState: {
     products: [],
     product: null,
-    total: 0,
     loading: false,
     error: null,
+    selectedProduct: null,
+    total: 0,
     filters: {
       search: '',
       category: '',
+      brand: '',
       minPrice: '',
       maxPrice: '',
       sort: '',
@@ -104,6 +88,7 @@ const productSlice = createSlice({
       state.filters = {
         search: '',
         category: '',
+        brand: '',
         minPrice: '',
         maxPrice: '',
         sort: '',
@@ -111,13 +96,15 @@ const productSlice = createSlice({
         limit: 10
       };
     },
-    clearProduct: (state) => {
-      state.product = null;
+    setSelectedProduct: (state, action) => {
+      state.selectedProduct = action.payload;
+    },
+    clearSelectedProduct: (state) => {
+      state.selectedProduct = null;
     }
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Products
       .addCase(fetchProducts.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -132,21 +119,6 @@ const productSlice = createSlice({
         state.error = action.error.message;
       })
 
-      // Fetch Single Product
-      .addCase(fetchProduct.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchProduct.fulfilled, (state, action) => {
-        state.loading = false;
-        state.product = action.payload.data.product;
-      })
-      .addCase(fetchProduct.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
-      })
-
-      // Create Product
       .addCase(createProduct.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -161,7 +133,6 @@ const productSlice = createSlice({
         state.error = action.error.message;
       })
 
-      // Update Product
       .addCase(updateProduct.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -174,16 +145,12 @@ const productSlice = createSlice({
         if (index !== -1) {
           state.products[index] = action.payload.data.product;
         }
-        if (state.product?._id === action.payload.data.product._id) {
-          state.product = action.payload.data.product;
-        }
       })
       .addCase(updateProduct.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
 
-      // Delete Product
       .addCase(deleteProduct.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -194,57 +161,35 @@ const productSlice = createSlice({
           (product) => product._id !== action.payload
         );
         state.total -= 1;
-        if (state.product?._id === action.payload) {
-          state.product = null;
-        }
       })
       .addCase(deleteProduct.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
 
-      // Bulk Delete Products
-      .addCase(bulkDeleteProducts.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(bulkDeleteProducts.fulfilled, (state, action) => {
-        state.loading = false;
-        state.products = state.products.filter(
-          (product) => !action.payload.includes(product._id)
+      .addCase(updateProductStatus.fulfilled, (state, action) => {
+        const index = state.products.findIndex(
+          (product) => product._id === action.payload.id
         );
-        state.total -= action.payload.length;
-      })
-      .addCase(bulkDeleteProducts.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
+        if (index !== -1) {
+          state.products[index].isActive = action.payload.status;
+        }
       })
 
-      // Variant Operations
-      .addCase(createVariant.fulfilled, (state, action) => {
-        if (state.product?._id === action.payload.data.variant.product) {
-          state.product.variants.push(action.payload.data.variant);
-        }
-      })
-      .addCase(updateVariant.fulfilled, (state, action) => {
-        if (state.product?._id === action.payload.data.variant.product) {
-          const index = state.product.variants.findIndex(
-            (variant) => variant._id === action.payload.data.variant._id
-          );
-          if (index !== -1) {
-            state.product.variants[index] = action.payload.data.variant;
-          }
-        }
-      })
-      .addCase(deleteVariant.fulfilled, (state, action) => {
-        if (state.product?._id === action.payload.productId) {
-          state.product.variants = state.product.variants.filter(
-            (variant) => variant._id !== action.payload.variantId
-          );
-        }
+      .addCase(bulkDeleteProducts.fulfilled, (state, action) => {
+        state.products = state.products.filter(
+          (product) => !action.payload.ids.includes(product._id)
+        );
+        state.total -= action.payload.ids.length;
       });
   }
 });
 
-export const { setFilters, resetFilters, clearProduct } = productSlice.actions;
+export const { 
+  setFilters, 
+  resetFilters, 
+  setSelectedProduct, 
+  clearSelectedProduct 
+} = productSlice.actions;
+
 export default productSlice.reducer;
