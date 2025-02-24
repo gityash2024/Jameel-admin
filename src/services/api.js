@@ -120,6 +120,21 @@
     getBlogTags: () => http.get('/blogs/tags'),
   };
 
+
+
+
+  export const subcategoryAPI = {
+    getAllSubCategories: () => http.get('/subcategories'),
+    getSubCategory: (id) => http.get(`/subcategories/${id}`),
+    getSubCategoriesByCategory: (categoryId) => http.get(`/subcategories/category/${categoryId}`),
+    createSubCategory: (data) => http.post('/subcategories', data),
+    updateSubCategory: (id, data) => http.put(`/subcategories/${id}`, data),
+    deleteSubCategory: (id) => http.delete(`/subcategories/${id}`),
+    updateSubCategoryStatus: (id, status) => http.put(`/subcategories/${id}/status`, { isActive: status })
+  };
+
+
+
   export const mediaAPI = {
     getAllMedia: (params) => http.get('/media', { params }),
     getMedia: (id) => http.get(`/media/${id}`),

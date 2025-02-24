@@ -39,6 +39,7 @@ import BookInStoreAppointment from './pages/BookInStoreAppointment';
 import FindNearbyStore from './pages/FindNearbyStore';
 import ViewDetails from './pages/ViewDetails';
 import Signup from './pages/Signup';
+import SubCategoryProduct from './pages/SubCategoryProduct';
 
 function App() {
   return (
@@ -67,6 +68,8 @@ function App() {
           <Route path="products/all" element={<AllProduct />} />
           <Route path="products/attribute" element={<AttributeProduct />} />
           <Route path="products/category" element={<CategoryProduct />} />
+          <Route path="products/subcategory" element={<SubCategoryProduct />} />
+
           <Route path="products/tgs" element={<TgsProduct />} />
           <Route path="orders" element={<Orders />} />
           <Route path="orders/all" element={<OrderAll />} />

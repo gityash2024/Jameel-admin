@@ -547,6 +547,8 @@ const AllProducts = () => {
               <Th>Image</Th>
               <Th>Name</Th>
               <Th>SKU</Th>
+              <Th>Category</Th>
+<Th>Subcategory</Th>  
               <Th>Price</Th>
               <Th>Stock</Th>
               <Th>Status</Th>
@@ -564,6 +566,8 @@ const AllProducts = () => {
                 </Td>
                 <Td>{product.name}</Td>
                 <Td>{product.sku}</Td>
+                <Td>{product.category?.name}</Td>
+<Td>{product.subcategory?.name}</Td>  
                 <Td>${product.regularPrice.toFixed(2)}</Td>
                 <Td>
                   <StockBadge status={product.stockStatus}>
@@ -664,9 +668,14 @@ const AllProducts = () => {
           </ProductDetailSection>
 
           <ProductDetailSection>
-            <ProductDetailLabel>Category</ProductDetailLabel>
-            <ProductDetailValue>{currentProduct.category.name}</ProductDetailValue>
-          </ProductDetailSection>
+  <ProductDetailLabel>Category</ProductDetailLabel>
+  <ProductDetailValue>{currentProduct.category.name}</ProductDetailValue>
+</ProductDetailSection>
+
+<ProductDetailSection>
+  <ProductDetailLabel>Subcategory</ProductDetailLabel>
+  <ProductDetailValue>{currentProduct.subcategory.name}</ProductDetailValue>
+</ProductDetailSection>
 
           <ProductDetailSection>
             <ProductDetailLabel>Price</ProductDetailLabel>

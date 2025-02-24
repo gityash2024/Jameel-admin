@@ -13,6 +13,7 @@ import { createProduct, fetchProduct, updateProduct } from "../features/products
 import { fetchCategories } from "../features/category/categorySlice";
 import { fetchTags } from "../features/tags/tagSlice";
 import { toast } from "react-hot-toast";
+import { fetchSubcategoriesByCategory } from "../features/subCategory/subcategorySlice";
 
 const Container = styled.div`
   display: grid;
@@ -280,7 +281,9 @@ const AddProduct = () => {
   const isEditMode = !!id;
   const { loading } = useSelector((state) => state.product);
   const { categories } = useSelector((state) => state.category);
-  const { tags } = useSelector((state) => state.tag);
+  const { subcategories } = useSelector((state) => state.subcategory); // Add this line
+  const [availableSubcategories, setAvailableSubcategories] = useState([]);
+    const { tags } = useSelector((state) => state.tag);
   const [activeSection, setActiveSection] = useState("general");
   const [images, setImages] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -289,6 +292,7 @@ const AddProduct = () => {
     name: "",
     sku: "",
     description: "",
+
     shortDescription: "",
     type: "physical",
     brand: "",
@@ -298,12 +302,18 @@ const AddProduct = () => {
     lowStockThreshold: "10",
     stockStatus: "in_stock",
     category: "",
+    subcategory: '',
     tags: [],
     isActive: true,
     isFeatured: false,
     isNewArrival: false
   });
-
+  useEffect(() => {
+    if (formData.category) {
+      dispatch(fetchSubcategoriesByCategory(formData.category));
+    }
+  }, [formData.category, dispatch]);
+  
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchTags());
@@ -592,7 +602,25 @@ const AddProduct = () => {
           ))}
         </Select>
       </FormGroup>
-
+      <FormGroup>
+  <label className="required">Subcategory</label>
+  <Select
+    name="subcategory"
+    value={formData.subcategory}
+    onChange={handleInputChange}
+    required
+    disabled={!formData.category}
+  >
+    <option value="">Select a subcategory</option>
+    {subcategories
+      .filter(sub => sub.category._id === formData.category)
+      .map((subcategory) => (
+        <option key={subcategory._id} value={subcategory._id}>
+          {subcategory.name}
+        </option>
+    ))}
+  </Select>
+</FormGroup>
       <FormGroup>
         <label>Tags</label>
         <Select

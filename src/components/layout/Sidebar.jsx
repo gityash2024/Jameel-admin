@@ -22,6 +22,7 @@ import {
   Grid ,
   Calendar,MapPin
 } from 'lucide-react';
+import { Category } from '@mui/icons-material';
 
 const SidebarContainer = styled.div`
   width: 280px;
@@ -203,7 +204,8 @@ const Sidebar = () => {
       icon: CreditCard,
       path: '/products/all',
    
-    },{ label: 'Categories', icon: ImageIcon,  path: '/products/category' },
+    },{ label: 'Categories', icon: Category,  path: '/products/category' },
+    { label: 'Sub Categories', icon: Category,  path: '/products/subcategory' },
     { label: 'Tags', icon: ImageIcon,  path: '/products/tgs' }, 
     {
       label: 'Orders',
