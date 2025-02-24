@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled, { keyframes } from 'styled-components';
-import { Plus, X, Package } from 'lucide-react';
+import { Plus, X, Package, Filter } from 'lucide-react';
 import { fetchSubCategories, createSubCategory, updateSubCategory, deleteSubCategory } from '../features/subCategory/subcategorySlice';
 import { fetchCategories } from '../features/category/categorySlice';
 import { toast } from 'react-hot-toast';
@@ -26,6 +26,43 @@ const Title = styled.h1`
   font-size: 1.5rem;
   font-weight: 600;
   color: #1a202c;
+`;
+
+const FilterContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+`;
+
+const FilterGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const FilterLabel = styled.label`
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4a5568;
+`;
+
+const Select = styled.select`
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background: #f8fafc;
+  outline: none;
+  min-width: 200px;
+  
+  &:focus {
+    border-color: #4299e1;
+  }
 `;
 
 const Table = styled.table`
@@ -266,6 +303,22 @@ const SkeletonCell = styled.div`
   margin: 0.5rem 0;
 `;
 
+const ClearButton = styled.button`
+  background: none;
+  border: none;
+  color: #4299e1;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 const SubCategoryProduct = () => {
   const dispatch = useDispatch();
   const { subcategories, loading } = useSelector((state) => state.subcategory);
@@ -274,6 +327,7 @@ const SubCategoryProduct = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [editingSubCategory, setEditingSubCategory] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -368,6 +422,10 @@ const SubCategoryProduct = () => {
     setConfirmAction(null);
   };
 
+  const filteredSubcategories = categoryFilter
+    ? subcategories.filter(subcategory => subcategory.category?._id === categoryFilter)
+    : subcategories;
+
   const renderSkeletonLoader = () => (
     <Table>
       <thead>
@@ -398,13 +456,17 @@ const SubCategoryProduct = () => {
       return renderSkeletonLoader();
     }
 
-    if (!Array.isArray(subcategories) || subcategories.length === 0) {
+    if (!Array.isArray(filteredSubcategories) || filteredSubcategories.length === 0) {
       return (
         <EmptyState>
           <EmptyStateIcon>
             <Package size={48} />
           </EmptyStateIcon>
-          <EmptyStateText>No subcategories found</EmptyStateText>
+          <EmptyStateText>
+            {categoryFilter 
+              ? "No subcategories found for the selected category" 
+              : "No subcategories found"}
+          </EmptyStateText>
           <Button primary onClick={() => setIsModalOpen(true)}>
             <Plus size={16} />
             Add Your First Subcategory
@@ -425,7 +487,7 @@ const SubCategoryProduct = () => {
           </tr>
         </thead>
         <tbody>
-          {subcategories.map((subcategory) => (
+          {filteredSubcategories.map((subcategory) => (
             <tr key={subcategory._id}>
               <Td>{subcategory.name}</Td>
               <Td>{subcategory.category?.name}</Td>
@@ -466,6 +528,28 @@ const SubCategoryProduct = () => {
           Add Subcategory
         </Button>
       </Header>
+
+      <FilterContainer>
+        <FilterGroup>
+          <FilterLabel>Filter by Category:</FilterLabel>
+          <Select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="">All Categories</option>
+            {categories.map((category) => (
+              <option key={category._id} value={category._id}>
+                {category.name}
+              </option>
+            ))}
+          </Select>
+          {categoryFilter && (
+            <ClearButton onClick={() => setCategoryFilter('')}>
+              Clear filter
+            </ClearButton>
+          )}
+        </FilterGroup>
+      </FilterContainer>
 
       {renderContent()}
 
