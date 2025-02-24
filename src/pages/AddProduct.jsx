@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { createProduct, fetchProduct, updateProduct } from "../features/products/productSlice";
 import { fetchCategories } from "../features/category/categorySlice";
-import { fetchTags } from "../features/tags/tagSlice";
 import { toast } from "react-hot-toast";
 import { fetchSubcategoriesByCategory } from "../features/subCategory/subcategorySlice";
 
@@ -283,7 +282,6 @@ const AddProduct = () => {
   const { categories } = useSelector((state) => state.category);
   const { subcategories } = useSelector((state) => state.subcategory); // Add this line
   const [availableSubcategories, setAvailableSubcategories] = useState([]);
-    const { tags } = useSelector((state) => state.tag);
   const [activeSection, setActiveSection] = useState("general");
   const [images, setImages] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -303,7 +301,6 @@ const AddProduct = () => {
     stockStatus: "in_stock",
     category: "",
     subcategory: '',
-    tags: [],
     isActive: true,
     isFeatured: false,
     isNewArrival: false
@@ -316,7 +313,6 @@ const AddProduct = () => {
   
   useEffect(() => {
     dispatch(fetchCategories());
-    dispatch(fetchTags());
 
     if (isEditMode) {
       dispatch(fetchProduct(id)).then((action) => {
@@ -336,7 +332,6 @@ const AddProduct = () => {
             lowStockThreshold: product.lowStockThreshold,
             stockStatus: product.stockStatus,
             category: product.category._id,
-            tags: product.tags.map(tag => tag._id || tag),
             isActive: product.isActive,
             isFeatured: product.isFeatured,
             isNewArrival: product.isNewArrival
@@ -361,16 +356,7 @@ const AddProduct = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name === "tags") {
-      const selectedTags = Array.from(
-        e.target.selectedOptions,
-        (option) => option.value
-      );
-      setFormData((prev) => ({
-        ...prev,
-        tags: selectedTags
-      }));
-    } else {
+
       setFormData((prev) => ({
         ...prev,
         [name]:
@@ -380,7 +366,7 @@ const AddProduct = () => {
             ? Number(value)
             : value
       }));
-    }
+    
   };
 
   const handleImageUpload = async (e) => {
@@ -422,11 +408,9 @@ const AddProduct = () => {
     const formDataToSend = new FormData();
 
     Object.keys(formData).forEach((key) => {
-      if (key === "tags") {
-        formDataToSend.append(key, JSON.stringify(formData[key]));
-      } else {
+     
         formDataToSend.append(key, formData[key]);
-      }
+      
     });
 
     formDataToSend.append(
@@ -447,7 +431,7 @@ const AddProduct = () => {
         await dispatch(createProduct(formDataToSend)).unwrap();
         toast.success("Product created successfully");
       }
-      navigate("/products");
+      navigate("/products/all");
     } catch (error) {
       toast.error(error.message || "Error saving product");
     }
@@ -621,21 +605,7 @@ const AddProduct = () => {
     ))}
   </Select>
 </FormGroup>
-      <FormGroup>
-        <label>Tags</label>
-        <Select
-          name="tags"
-          value={formData.tags}
-          onChange={handleInputChange}
-          multiple
-        >
-          {tags.map((tag) => (
-            <option key={tag._id} value={tag._id}>
-              {tag.name}
-            </option>
-          ))}
-        </Select>
-      </FormGroup>
+ 
     </>
   );
 
@@ -798,7 +768,7 @@ const AddProduct = () => {
           <FormHeader>
             <Button 
               type="button" 
-              onClick={() => navigate("/products")}
+              onClick={() => navigate("/products/all")}
               style={{ 
                 background: 'transparent', 
                 border: 'none', 
@@ -812,7 +782,7 @@ const AddProduct = () => {
           </FormHeader>
           {renderActiveSection()}
           <ButtonGroup>
-            <Button type="button" onClick={() => navigate("/products")}>
+            <Button type="button" onClick={() => navigate("/products/all")}>
               Cancel
             </Button>
             <Button type="submit" primary disabled={loading}>
