@@ -7,6 +7,8 @@ import User from './pages/User';
 import AddUser from './pages/AddUser';
 import AllUser from './pages/AllUser';
 import RoleUser from './pages/RoleUser';
+import SupportTicketsPage from './pages/SupportTickets';
+
 import Products from './pages/Products';
 import AddProduct from './pages/AddProduct';
 import AllProduct from './pages/AllProduct';
@@ -64,6 +66,7 @@ function App() {
           <Route path="products" element={<Products />} />
           <Route path="products/add" element={<AddProduct />} />
           <Route path="/products/edit/:id" element={<AddProduct />} />
+          <Route path="support-tickets" element={<SupportTicketsPage />} />
 
           <Route path="products/all" element={<AllProduct />} />
           <Route path="products/attribute" element={<AttributeProduct />} />
@@ -79,18 +82,18 @@ function App() {
           <Route path="blogs/add" element={<AddBlogs />} />
           <Route path="blogs/category" element={<BlogCategroy />} />
           <Route path="blogs/tag" element={<BlogTag />} />
-          <Route path="taxies" element={<Taxies />} />
-          <Route path="shipping" element={<Shipping />} />
+          {/* <Route path="taxies" element={<Taxies />} /> */}
+          {/* <Route path="shipping" element={<Shipping />} /> */}
           <Route path="coupons" element={<Coupons />} />
-          <Route path="currencies" element={<Currencies />} />
-          <Route path="review" element={<Review />} />
-          <Route path="faqs" element={<Faqs />} />
+          {/* <Route path="currencies" element={<Currencies />} /> */}
+          {/* <Route path="review" element={<Review />} /> */}
+          {/* <Route path="faqs" element={<Faqs />} /> */}
           <Route path="users" element={<User />} />
           <Route path="users/add" element={<AddUser />} />
           <Route path="users/all" element={<AllUser />} />
           <Route path="users/role" element={<RoleUser />} />
           <Route path="customers" element={<Customers />} />
-          <Route path="settings" element={<Settings />} />
+          {/* <Route path="settings" element={<Settings />} /> */}
           <Route path="sales" element={<Sales />} />
           <Route path="sales/details" element={<SaleDetails />} />
           <Route path="sales/productlist" element={<SaleProductlist />} />

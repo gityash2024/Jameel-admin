@@ -76,7 +76,13 @@
     updateCategoryStatus: (id, status) => http.put(`/categories/${id}/status`, { isActive: status })
   };
 
-
+  export const supportAPI = {
+    getAllTickets: (params) => http.get('/support-tickets', { params }),
+    getTicket: (id) => http.get(`/support-tickets/${id}`),
+    updateTicketStatus: (id, status) => http.put(`/support-tickets/${id}/status`, { status }),
+    addTicketResponse: (id, data) => http.post(`/support-tickets/${id}/responses`, data),
+    deleteTicket: (id) => http.delete(`/support-tickets/${id}`)
+  };
   export const tagAPI = {
     getAllTags: () => http.get('/tags'),
     getTag: (id) => http.get(`/tags/${id}`),
