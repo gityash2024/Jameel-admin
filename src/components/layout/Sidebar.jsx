@@ -231,17 +231,17 @@ const Sidebar = () => {
    },
     
     
-   
+   {
+    label: "Find-Near-Store",
+    icon: MapPin,
+    path: '/find-nearby-store'
+},
     {
        label: "Book-In-Appointment",
        icon: Calendar,
        path: '/book-in-store-appointment'
     },
-    {
-        label: "Find-Near-Store",
-        icon: MapPin,
-        path: '/find-nearby-store'
-    },
+    
     
     {
       label: 'Coupons',

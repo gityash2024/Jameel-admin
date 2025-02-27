@@ -102,6 +102,16 @@
     deleteProduct: (id) => http.delete(`/products/${id}`),
   };
 
+  export const storeAPI = {
+    getAllStores: () => http.get('/stores'),
+    getStore: (id) => http.get(`/stores/${id}`),
+    createStore: (data) => http.post('/stores', data),
+    updateStore: (id, data) => http.put(`/stores/${id}`, data),
+    deleteStore: (id) => http.delete(`/stores/${id}`),
+    findNearbyStores: (lat, lng, distance) => 
+      http.get(`/stores/nearby?lat=${lat}&lng=${lng}&distance=${distance || 10000}`)
+  };
+
   export const userAPI = {
     getAllUsers: () => http.get('/users'),
     getUser: (id) => http.get(`/users/${id}`),
