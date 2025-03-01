@@ -113,11 +113,11 @@
   };
 
   export const userAPI = {
-    getAllUsers: () => http.get('/users'),
-    getUser: (id) => http.get(`/users/${id}`),
+    getAllUsers: () => http.get('/user'),
+    getUser: (id) => http.get(`/user/${id}`),
     createUser: (data) => http.post('/auth/register', data),
-    updateUser: (id, data) => http.put(`/users/${id}`, data),
-    deleteUser: (id) => http.delete(`/users/${id}`),
+    updateUser: (id, data) => http.put(`/user/${id}`, data),
+    deleteUser: (id) => http.delete(`/user/${id}`),
   };
   export const roleAPI = {
     getAllRoles: () => http.get('/roles'),
