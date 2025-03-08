@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import styled, { keyframes } from 'styled-components';
-import { Plus, X, Package, Filter } from 'lucide-react';
+import { Plus, X, Package, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchSubCategories, createSubCategory, updateSubCategory, deleteSubCategory } from '../features/subCategory/subcategorySlice';
 import { fetchCategories } from '../features/category/categorySlice';
 import { toast } from 'react-hot-toast';
@@ -250,7 +250,6 @@ const ButtonGroup = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
 `;
 
 const EmptyState = styled.div`
@@ -319,6 +318,52 @@ const ClearButton = styled.button`
   }
 `;
 
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+`;
+
+const PaginationInfo = styled.div`
+  font-size: 0.875rem;
+  color: #4a5568;
+`;
+
+const PaginationControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const PageButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 0.375rem;
+  border: 1px solid #e2e8f0;
+  background: ${props => props.active ? '#000' : 'white'};
+  color: ${props => props.active ? 'white' : '#1a202c'};
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.active ? '#000' : '#f7fafc'};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 const SubCategoryProduct = () => {
   const dispatch = useDispatch();
   const { subcategories, loading } = useSelector((state) => state.subcategory);
@@ -328,6 +373,8 @@ const SubCategoryProduct = () => {
   const [editingSubCategory, setEditingSubCategory] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -339,6 +386,10 @@ const SubCategoryProduct = () => {
     dispatch(fetchSubCategories());
     dispatch(fetchCategories());
   }, [dispatch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter]);
 
   const resetForm = () => {
     setFormData({
@@ -426,6 +477,43 @@ const SubCategoryProduct = () => {
     ? subcategories.filter(subcategory => subcategory.category?._id === categoryFilter)
     : subcategories;
 
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredSubcategories.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredSubcategories.length / itemsPerPage);
+
+  const goToPage = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= totalPages) {
+      setCurrentPage(pageNumber);
+    }
+  };
+
+  const renderPageNumbers = () => {
+    const pageNumbers = [];
+    const maxPageNumbersToShow = 5;
+
+    let startPage = Math.max(1, currentPage - Math.floor(maxPageNumbersToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPageNumbersToShow - 1);
+
+    if (endPage - startPage + 1 < maxPageNumbersToShow) {
+      startPage = Math.max(1, endPage - maxPageNumbersToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(
+        <PageButton 
+          key={i} 
+          active={i === currentPage} 
+          onClick={() => goToPage(i)}
+        >
+          {i}
+        </PageButton>
+      );
+    }
+
+    return pageNumbers;
+  };
+
   const renderSkeletonLoader = () => (
     <Table>
       <thead>
@@ -438,7 +526,7 @@ const SubCategoryProduct = () => {
         </tr>
       </thead>
       <tbody>
-        {[1, 2, 3].map((index) => (
+        {[1, 2, 3, 4, 5].map((index) => (
           <SkeletonRow key={index}>
             <Td><SkeletonCell width="150px" /></Td>
             <Td><SkeletonCell width="150px" /></Td>
@@ -476,46 +564,72 @@ const SubCategoryProduct = () => {
     }
 
     return (
-      <Table>
-        <thead>
-          <tr>
-            <Th>Name</Th>
-            <Th>Category</Th>
-            <Th>Description</Th>
-            <Th>Status</Th>
-            <Th>Actions</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredSubcategories.map((subcategory) => (
-            <tr key={subcategory._id}>
-              <Td>{subcategory.name}</Td>
-              <Td>{subcategory.category?.name}</Td>
-              <Td>{subcategory.description}</Td>
-              <Td>
-                <ToggleSwitch>
-                  <input
-                    type="checkbox"
-                    checked={subcategory.isActive}
-                    onChange={(e) => handleStatusChange(subcategory, e.target.checked)}
-                  />
-                  <span className="slider" />
-                </ToggleSwitch>
-              </Td>
-              <Td>
-                <ButtonGroup>
-                  <Button onClick={() => handleEdit(subcategory)}>
-                    Edit
-                  </Button>
-                  <Button onClick={() => handleDeleteClick(subcategory)}>
-                    Delete
-                  </Button>
-                </ButtonGroup>
-              </Td>
+      <>
+        <Table>
+          <thead>
+            <tr>
+              <Th>Name</Th>
+              <Th>Category</Th>
+              <Th>Description</Th>
+              <Th>Status</Th>
+              <Th>Actions</Th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {currentItems.map((subcategory) => (
+              <tr key={subcategory._id}>
+                <Td>{subcategory.name}</Td>
+                <Td>{subcategory.category?.name}</Td>
+                <Td>{subcategory.description}</Td>
+                <Td>
+                  <ToggleSwitch>
+                    <input
+                      type="checkbox"
+                      checked={subcategory.isActive}
+                      onChange={(e) => handleStatusChange(subcategory, e.target.checked)}
+                    />
+                    <span className="slider" />
+                  </ToggleSwitch>
+                </Td>
+                <Td>
+                  <ButtonGroup>
+                    <Button onClick={() => handleEdit(subcategory)}>
+                      Edit
+                    </Button>
+                    <Button onClick={() => handleDeleteClick(subcategory)}>
+                      Delete
+                    </Button>
+                  </ButtonGroup>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+
+        <PaginationContainer>
+          <PaginationInfo>
+            Showing {Math.min(filteredSubcategories.length, indexOfFirstItem + 1)} to {Math.min(filteredSubcategories.length, indexOfLastItem)} of {filteredSubcategories.length} subcategories
+          </PaginationInfo>
+          
+          <PaginationControls>
+            <PageButton 
+              disabled={currentPage === 1} 
+              onClick={() => goToPage(currentPage - 1)}
+            >
+              <ChevronLeft size={16} />
+            </PageButton>
+            
+            {renderPageNumbers()}
+            
+            <PageButton 
+              disabled={currentPage === totalPages} 
+              onClick={() => goToPage(currentPage + 1)}
+            >
+              <ChevronRight size={16} />
+            </PageButton>
+          </PaginationControls>
+        </PaginationContainer>
+      </>
     );
   };
 
