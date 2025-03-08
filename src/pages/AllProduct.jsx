@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
-import { Edit, Trash2, Eye, Download, Plus, X, Info } from 'lucide-react';
+import { Edit, Trash2, Eye, Download, Plus, X, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { 
   fetchProducts, 
   deleteProduct, 
@@ -330,15 +330,59 @@ const EmptyState = styled.div`
   text-align: center;
 `;
 
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1rem 0;
+`;
+
+const PaginationInfo = styled.div`
+  font-size: 0.875rem;
+  color: #4a5568;
+`;
+
+const PaginationButtons = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const PageButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 0.5rem;
+  border: 1px solid ${props => props.active ? '#4299e1' : '#e2e8f0'};
+  background: ${props => props.active ? '#ebf8ff' : 'white'};
+  color: ${props => props.active ? '#3182ce' : '#4a5568'};
+  font-size: 0.875rem;
+  font-weight: ${props => props.active ? '600' : '400'};
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #f7fafc;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
 const AllProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { products, loading, product: selectedProductDetail } = useSelector((state) => state.product);
+  const { products, loading, product: selectedProductDetail, total } = useSelector((state) => state.product);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [currentProduct, setCurrentProduct] = useState(null);
   const [filters, setFilters] = useState({
     type: '',
@@ -346,12 +390,21 @@ const AllProducts = () => {
     status: ''
   });
 
+  const totalPages = Math.ceil(total / itemsPerPage);
+
   useEffect(() => {
-    dispatch(fetchProducts());
-  }, [dispatch]);
+    const params = {
+      page: currentPage,
+      limit: itemsPerPage,
+      search: searchTerm,
+      ...filters
+    };
+    dispatch(fetchProducts(params));
+  }, [dispatch, currentPage, itemsPerPage, searchTerm, filters]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+    setCurrentPage(1);
   };
 
   const handleFilterChange = (e) => {
@@ -359,6 +412,7 @@ const AllProducts = () => {
       ...prev,
       [e.target.name]: e.target.value
     }));
+    setCurrentPage(1);
   };
 
   const handleStatusChange = async (product, newStatus) => {
@@ -403,6 +457,7 @@ const AllProducts = () => {
     setCurrentProduct(product);
     setIsViewModalOpen(true);
   };
+
   const handleExport = () => {
     const csv = [
       ['Name', 'SKU', 'Brand', 'Price', 'Stock', 'Status'],
@@ -427,15 +482,77 @@ const AllProducts = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !filters.type || product.type === filters.type;
-    const matchesBrand = !filters.brand || product.brand === filters.brand;
-    const matchesStatus = !filters.status || product.stockStatus === filters.status;
-    
-    return matchesSearch && matchesType && matchesBrand && matchesStatus;
-  });
+  const handlePageChange = (newPage) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
+
+  const renderPagination = () => {
+    if (!products.length) return null;
+
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, total);
+
+    return (
+      <PaginationContainer>
+        <PaginationInfo>
+          Showing {startItem} to {endItem} of {total} products
+        </PaginationInfo>
+        <PaginationButtons>
+          <PageButton
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft size={16} />
+          </PageButton>
+          
+          {[...Array(totalPages)].map((_, index) => {
+            const pageNumber = index + 1;
+            
+            // Only show a limited number of page buttons
+            if (
+              pageNumber === 1 ||
+              pageNumber === totalPages ||
+              (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+            ) {
+              return (
+                <PageButton
+                  key={pageNumber}
+                  active={pageNumber === currentPage}
+                  onClick={() => handlePageChange(pageNumber)}
+                >
+                  {pageNumber}
+                </PageButton>
+              );
+            }
+            
+            // Show ellipsis for skipped pages
+            if (
+              (pageNumber === currentPage - 2 && pageNumber > 2) ||
+              (pageNumber === currentPage + 2 && pageNumber < totalPages - 1)
+            ) {
+              return <PageButton key={pageNumber} disabled>...</PageButton>;
+            }
+            
+            return null;
+          })}
+          
+          <PageButton
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight size={16} />
+          </PageButton>
+        </PaginationButtons>
+      </PaginationContainer>
+    );
+  };
 
   const renderSkeletonLoader = () => (
     <Table>
@@ -488,7 +605,7 @@ const AllProducts = () => {
             Show:
             <Select 
               value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              onChange={handleItemsPerPageChange}
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -532,7 +649,7 @@ const AllProducts = () => {
 
       {loading ? (
         renderSkeletonLoader()
-      ) : filteredProducts.length === 0 ? (
+      ) : products.length === 0 ? (
         <EmptyState>
           <Title>No products found</Title>
           <Button primary onClick={() => navigate('/products/add')} style={{ marginTop: '1rem' }}>
@@ -541,68 +658,71 @@ const AllProducts = () => {
           </Button>
         </EmptyState>
       ) : (
-        <Table>
-          <thead>
-            <tr>
-              <Th>Image</Th>
-              <Th>Name</Th>
-              <Th>SKU</Th>
-              <Th>Category</Th>
-<Th>Subcategory</Th>  
-              <Th>Price</Th>
-              <Th>Stock</Th>
-              <Th>Status</Th>
-              <Th>Actions</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredProducts.slice(0, itemsPerPage).map((product) => (
-              <tr key={product._id}>
-                <Td>
-                  <ProductImage 
-                    src={product.images?.[0]?.url || '/placeholder.png'} 
-                    alt={product.name}
-                  />
-                </Td>
-                <Td>{product.name}</Td>
-                <Td>{product.sku}</Td>
-                <Td>{product.category?.name}</Td>
-<Td>{product.subcategory?.name}</Td>  
-                <Td>${product.regularPrice.toFixed(2)}</Td>
-                <Td>
-                  <StockBadge status={product.stockStatus}>
-                    {product.stockStatus === 'in_stock' ? 'In Stock' :
-                     product.stockStatus === 'out_of_stock' ? 'Out of Stock' :
-                     'On Backorder'}
-                  </StockBadge>
-                </Td>
-                <Td>
-                  <Toggle>
-                    <ToggleInput
-                      type="checkbox"
-                      checked={product.isActive}
-                      onChange={(e) => handleStatusChange(product, e.target.checked)}
-                    />
-                    <ToggleSlider />
-                  </Toggle>
-                </Td>
-                <Td>
-                  <ButtonGroup>
-                    <ActionButton onClick={() => handleEditClick(product)}>
-                      <Edit size={16} />
-                    </ActionButton>
-                    <ActionButton delete onClick={() => handleDeleteClick(product)}>
-                      <Trash2 size={16} />
-                    </ActionButton>
-                    <ActionButton onClick={() => handleViewClick(product)}>
-                      <Eye size={16} />
-                    </ActionButton>
-                  </ButtonGroup>
-                </Td>
+        <>
+          <Table>
+            <thead>
+              <tr>
+                <Th>Image</Th>
+                <Th>Name</Th>
+                <Th>SKU</Th>
+                <Th>Category</Th>
+                <Th>Subcategory</Th>  
+                <Th>Price</Th>
+                <Th>Stock</Th>
+                <Th>Status</Th>
+                <Th>Actions</Th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <tr key={product._id}>
+                  <Td>
+                    <ProductImage 
+                      src={product.images?.[0]?.url || '/placeholder.png'} 
+                      alt={product.name}
+                    />
+                  </Td>
+                  <Td>{product.name}</Td>
+                  <Td>{product.sku}</Td>
+                  <Td>{product.category?.name}</Td>
+                  <Td>{product.subcategory?.name}</Td>  
+                  <Td>${product.regularPrice.toFixed(2)}</Td>
+                  <Td>
+                    <StockBadge status={product.stockStatus}>
+                      {product.stockStatus === 'in_stock' ? 'In Stock' :
+                       product.stockStatus === 'out_of_stock' ? 'Out of Stock' :
+                       'On Backorder'}
+                    </StockBadge>
+                  </Td>
+                  <Td>
+                    <Toggle>
+                      <ToggleInput
+                        type="checkbox"
+                        checked={product.isActive}
+                        onChange={(e) => handleStatusChange(product, e.target.checked)}
+                      />
+                      <ToggleSlider />
+                    </Toggle>
+                  </Td>
+                  <Td>
+                    <ButtonGroup>
+                      <ActionButton onClick={() => handleEditClick(product)}>
+                        <Edit size={16} />
+                      </ActionButton>
+                      <ActionButton delete onClick={() => handleDeleteClick(product)}>
+                        <Trash2 size={16} />
+                      </ActionButton>
+                      <ActionButton onClick={() => handleViewClick(product)}>
+                        <Eye size={16} />
+                      </ActionButton>
+                    </ButtonGroup>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          {renderPagination()}
+        </>
       )}
 
       {isConfirmModalOpen && (
@@ -635,121 +755,121 @@ const AllProducts = () => {
         </Modal>
       )}
 
-{isViewModalOpen && currentProduct && (
-  <Modal>
-    <ModalContent size="800px">
-      <ModalHeader>
-        <ModalTitle>Product Details</ModalTitle>
-        <Button onClick={() => setIsViewModalOpen(false)}>
-          <X size={20} />
-        </Button>
-      </ModalHeader>
+      {isViewModalOpen && currentProduct && (
+        <Modal>
+          <ModalContent size="800px">
+            <ModalHeader>
+              <ModalTitle>Product Details</ModalTitle>
+              <Button onClick={() => setIsViewModalOpen(false)}>
+                <X size={20} />
+              </Button>
+            </ModalHeader>
 
-      <ProductDetailGrid>
-        <div>
-          <ProductDetailSection>
-            <ProductDetailLabel>Name</ProductDetailLabel>
-            <ProductDetailValue>{currentProduct.name}</ProductDetailValue>
-          </ProductDetailSection>
+            <ProductDetailGrid>
+              <div>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Name</ProductDetailLabel>
+                  <ProductDetailValue>{currentProduct.name}</ProductDetailValue>
+                </ProductDetailSection>
 
-          <ProductDetailSection>
-            <ProductDetailLabel>SKU</ProductDetailLabel>
-            <ProductDetailValue>{currentProduct.sku}</ProductDetailValue>
-          </ProductDetailSection>
+                <ProductDetailSection>
+                  <ProductDetailLabel>SKU</ProductDetailLabel>
+                  <ProductDetailValue>{currentProduct.sku}</ProductDetailValue>
+                </ProductDetailSection>
 
-          <ProductDetailSection>
-            <ProductDetailLabel>Brand</ProductDetailLabel>
-            <ProductDetailValue>{currentProduct.brand}</ProductDetailValue>
-          </ProductDetailSection>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Brand</ProductDetailLabel>
+                  <ProductDetailValue>{currentProduct.brand}</ProductDetailValue>
+                </ProductDetailSection>
 
-          <ProductDetailSection>
-            <ProductDetailLabel>Type</ProductDetailLabel>
-            <ProductDetailValue>{currentProduct.type}</ProductDetailValue>
-          </ProductDetailSection>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Type</ProductDetailLabel>
+                  <ProductDetailValue>{currentProduct.type}</ProductDetailValue>
+                </ProductDetailSection>
 
-          <ProductDetailSection>
-  <ProductDetailLabel>Category</ProductDetailLabel>
-  <ProductDetailValue>{currentProduct.category.name}</ProductDetailValue>
-</ProductDetailSection>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Category</ProductDetailLabel>
+                  <ProductDetailValue>{currentProduct.category.name}</ProductDetailValue>
+                </ProductDetailSection>
 
-<ProductDetailSection>
-  <ProductDetailLabel>Subcategory</ProductDetailLabel>
-  <ProductDetailValue>{currentProduct.subcategory.name}</ProductDetailValue>
-</ProductDetailSection>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Subcategory</ProductDetailLabel>
+                  <ProductDetailValue>{currentProduct.subcategory.name}</ProductDetailValue>
+                </ProductDetailSection>
 
-          <ProductDetailSection>
-            <ProductDetailLabel>Price</ProductDetailLabel>
-            <ProductDetailValue>
-              Regular: ${currentProduct.regularPrice.toFixed(2)}
-              {currentProduct.salePrice && 
-                ` | Sale: $${currentProduct.salePrice.toFixed(2)}`
-              }
-            </ProductDetailValue>
-          </ProductDetailSection>
-        </div>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Price</ProductDetailLabel>
+                  <ProductDetailValue>
+                    Regular: ${currentProduct.regularPrice.toFixed(2)}
+                    {currentProduct.salePrice && 
+                      ` | Sale: $${currentProduct.salePrice.toFixed(2)}`
+                    }
+                  </ProductDetailValue>
+                </ProductDetailSection>
+              </div>
 
-        <div>
-          <ProductDetailSection>
-            <ProductDetailLabel>Stock Quantity</ProductDetailLabel>
-            <ProductDetailValue>{currentProduct.stockQuantity}</ProductDetailValue>
-          </ProductDetailSection>
+              <div>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Stock Quantity</ProductDetailLabel>
+                  <ProductDetailValue>{currentProduct.stockQuantity}</ProductDetailValue>
+                </ProductDetailSection>
 
-          <ProductDetailSection>
-            <ProductDetailLabel>Stock Status</ProductDetailLabel>
-            <ProductDetailValue>
-              <StockBadge status={currentProduct.stockStatus}>
-                {currentProduct.stockStatus === 'in_stock' ? 'In Stock' :
-                 currentProduct.stockStatus === 'out_of_stock' ? 'Out of Stock' :
-                 'On Backorder'}
-              </StockBadge>
-            </ProductDetailValue>
-          </ProductDetailSection>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Stock Status</ProductDetailLabel>
+                  <ProductDetailValue>
+                    <StockBadge status={currentProduct.stockStatus}>
+                      {currentProduct.stockStatus === 'in_stock' ? 'In Stock' :
+                       currentProduct.stockStatus === 'out_of_stock' ? 'Out of Stock' :
+                       'On Backorder'}
+                    </StockBadge>
+                  </ProductDetailValue>
+                </ProductDetailSection>
 
-          <ProductDetailSection>
-            <ProductDetailLabel>Status</ProductDetailLabel>
-            <ProductDetailValue>
-              {currentProduct.isActive ? 'Active' : 'Inactive'}
-            </ProductDetailValue>
-          </ProductDetailSection>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Status</ProductDetailLabel>
+                  <ProductDetailValue>
+                    {currentProduct.isActive ? 'Active' : 'Inactive'}
+                  </ProductDetailValue>
+                </ProductDetailSection>
 
-          <ProductDetailSection>
-            <ProductDetailLabel>Featured</ProductDetailLabel>
-            <ProductDetailValue>
-              {currentProduct.isFeatured ? 'Yes' : 'No'}
-            </ProductDetailValue>
-          </ProductDetailSection>
+                <ProductDetailSection>
+                  <ProductDetailLabel>Featured</ProductDetailLabel>
+                  <ProductDetailValue>
+                    {currentProduct.isFeatured ? 'Yes' : 'No'}
+                  </ProductDetailValue>
+                </ProductDetailSection>
 
-          <ProductDetailSection>
-            <ProductDetailLabel>New Arrival</ProductDetailLabel>
-            <ProductDetailValue>
-              {currentProduct.isNewArrival ? 'Yes' : 'No'}
-            </ProductDetailValue>
-          </ProductDetailSection>
-        </div>
-      </ProductDetailGrid>
+                <ProductDetailSection>
+                  <ProductDetailLabel>New Arrival</ProductDetailLabel>
+                  <ProductDetailValue>
+                    {currentProduct.isNewArrival ? 'Yes' : 'No'}
+                  </ProductDetailValue>
+                </ProductDetailSection>
+              </div>
+            </ProductDetailGrid>
 
-      <ProductDetailSection>
-        <ProductDetailLabel>Description</ProductDetailLabel>
-        <ProductDetailValue>{currentProduct.description}</ProductDetailValue>
-      </ProductDetailSection>
+            <ProductDetailSection>
+              <ProductDetailLabel>Description</ProductDetailLabel>
+              <ProductDetailValue>{currentProduct.description}</ProductDetailValue>
+            </ProductDetailSection>
 
-      <ProductDetailSection>
-        <ProductDetailLabel>Product Images</ProductDetailLabel>
-        <ProductImageContainer>
-          {currentProduct.images.map((image, index) => (
-            <ProductImage 
-              key={index} 
-              src={image.url} 
-              alt={`Product ${index + 1}`} 
-            />
-          ))}
-        </ProductImageContainer>
-      </ProductDetailSection>
-    </ModalContent>
-  </Modal>
-)}
+            <ProductDetailSection>
+              <ProductDetailLabel>Product Images</ProductDetailLabel>
+              <ProductImageContainer>
+                {currentProduct.images.map((image, index) => (
+                  <ProductImage 
+                    key={index} 
+                    src={image.url} 
+                    alt={`Product ${index + 1}`} 
+                  />
+                ))}
+              </ProductImageContainer>
+            </ProductDetailSection>
+          </ModalContent>
+        </Modal>
+      )}
     </Container>
   );
 };
 
-export default AllProducts; 
+export default AllProducts;
