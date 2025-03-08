@@ -212,7 +212,6 @@ const ButtonGroup = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
 `;
 
 const EmptyState = styled.div`
