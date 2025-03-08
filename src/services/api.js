@@ -76,7 +76,13 @@
     updateCategoryStatus: (id, status) => http.put(`/categories/${id}/status`, { isActive: status })
   };
 
-
+  export const supportAPI = {
+    getAllTickets: (params) => http.get('/support-tickets', { params }),
+    getTicket: (id) => http.get(`/support-tickets/${id}`),
+    updateTicketStatus: (id, status) => http.put(`/support-tickets/${id}/status`, { status }),
+    addTicketResponse: (id, data) => http.post(`/support-tickets/${id}/responses`, data),
+    deleteTicket: (id) => http.delete(`/support-tickets/${id}`)
+  };
   export const tagAPI = {
     getAllTags: () => http.get('/tags'),
     getTag: (id) => http.get(`/tags/${id}`),
@@ -96,12 +102,22 @@
     deleteProduct: (id) => http.delete(`/products/${id}`),
   };
 
+  export const storeAPI = {
+    getAllStores: () => http.get('/stores'),
+    getStore: (id) => http.get(`/stores/${id}`),
+    createStore: (data) => http.post('/stores', data),
+    updateStore: (id, data) => http.put(`/stores/${id}`, data),
+    deleteStore: (id) => http.delete(`/stores/${id}`),
+    findNearbyStores: (lat, lng, distance) => 
+      http.get(`/stores/nearby?lat=${lat}&lng=${lng}&distance=${distance || 10000}`)
+  };
+
   export const userAPI = {
-    getAllUsers: () => http.get('/users'),
-    getUser: (id) => http.get(`/users/${id}`),
+    getAllUsers: () => http.get('/user'),
+    getUser: (id) => http.get(`/user/${id}`),
     createUser: (data) => http.post('/auth/register', data),
-    updateUser: (id, data) => http.put(`/users/${id}`, data),
-    deleteUser: (id) => http.delete(`/users/${id}`),
+    updateUser: (id, data) => http.put(`/user/${id}`, data),
+    deleteUser: (id) => http.delete(`/user/${id}`),
   };
   export const roleAPI = {
     getAllRoles: () => http.get('/roles'),

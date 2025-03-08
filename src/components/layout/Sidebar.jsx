@@ -223,51 +223,30 @@ const Sidebar = () => {
       icon: FileText,
       path: '/blogs'
     },
+
     {
-      label: 'Review',
-      icon: Star,
-      path: '/review'
-    },
-    {
-      label: "FAQ's",
-      icon: HelpCircle,
-      path: '/faqs'
-    },
-    {
-      label: 'Taxies',
-      icon: Percent,
-      path: '/taxies'
-    },
-    {
-      label: 'Shipping',
-      icon: Truck,
-      path: '/shipping'
-    },
-    {
-      label: 'Coupons',
-      icon: Tag,
-      path: '/coupons'
-    },
-    {
-      label: 'Currencies',
-      icon: DollarSign,
-      path: '/currencies'
-    },
-   
+      label: "Help Center",
+      icon: Calendar,
+      path: '/support-tickets'
+   },
+    
+    
+   {
+    label: "Find-Near-Store",
+    icon: MapPin,
+    path: '/find-nearby-store'
+},
     {
        label: "Book-In-Appointment",
        icon: Calendar,
        path: '/book-in-store-appointment'
     },
+    
+    
     {
-        label: "Find-Near-Store",
-        icon: MapPin,
-        path: '/find-nearby-store'
-    },
-    {
-      label: 'Settings',
-      icon: Settings,
-      path: '/settings'
+      label: 'Coupons',
+      icon: Tag,
+      path: '/coupons'
     }
   ];
 

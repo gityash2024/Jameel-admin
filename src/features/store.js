@@ -8,6 +8,7 @@ import tagReducer from './tags/tagSlice';
 import mediaReducer from './media/mediaSlice';
 import blogReducer from './blog/blogSlice';
 import subCategoryReducer from './subCategory/subcategorySlice';
+import storeReducer from './store/storeSlice';
 
 
 export const store = configureStore({
@@ -20,7 +21,8 @@ export const store = configureStore({
     tag: tagReducer,
     media: mediaReducer,
     blogs: blogReducer,
-    subcategory: subCategoryReducer
+    subcategory: subCategoryReducer,
+    store: storeReducer
 
   },
 });

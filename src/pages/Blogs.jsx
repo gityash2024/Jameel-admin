@@ -927,7 +927,7 @@ const Blogs = () => {
               <tr key={blog._id}>
                 <Td>
                   <BlogImage 
-                    src={blog.featuredImage?.url || '/placeholder.png'} 
+                    src={blog.featuredImage?.[0] || '/placeholder.png'} 
                     alt={blog.title} 
                   />
                 </Td>
