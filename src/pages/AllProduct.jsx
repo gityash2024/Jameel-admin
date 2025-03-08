@@ -172,6 +172,16 @@ const StockBadge = styled.span`
   }}
 `;
 
+const StockStatus = styled.div`
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2rem;
+  display: inline-block;
+  background: ${props => props.inStock ? '#DEF7EC' : '#FDE8E8'};
+  color: ${props => props.inStock ? '#03543F' : '#9B1C1C'};
+`;
+
 const ActionButton = styled.button`
   padding: 0.5rem;
   border: none;
@@ -335,48 +345,61 @@ const PaginationContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-top: 2rem;
-  padding: 1rem 0;
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
 `;
 
-const PaginationInfo = styled.div`
+const PageInfo = styled.div`
   font-size: 0.875rem;
   color: #4a5568;
 `;
 
-const PaginationButtons = styled.div`
+const PageNavigation = styled.div`
   display: flex;
+  align-items: center;
   gap: 0.5rem;
 `;
 
 const PageButton = styled.button`
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 0.5rem;
-  border: 1px solid ${props => props.active ? '#4299e1' : '#e2e8f0'};
-  background: ${props => props.active ? '#ebf8ff' : 'white'};
-  color: ${props => props.active ? '#3182ce' : '#4a5568'};
   font-size: 0.875rem;
-  font-weight: ${props => props.active ? '600' : '400'};
+  border: 1px solid #e2e8f0;
+  background: ${props => props.active ? '#1a237e' : 'white'};
+  color: ${props => props.active ? 'white' : '#1a202c'};
   cursor: pointer;
   transition: all 0.2s;
   
   &:hover {
-    background: #f7fafc;
+    background: ${props => props.active ? '#1a237e' : '#f7fafc'};
   }
   
   &:disabled {
-    opacity: 0.5;
+    background: #f7fafc;
+    color: #a0aec0;
     cursor: not-allowed;
   }
+`;
+
+const PaginationEllipsis = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #4a5568;
+  font-size: 1.25rem;
 `;
 
 const AllProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { products, loading, product: selectedProductDetail, total } = useSelector((state) => state.product);
+  const { products, loading, total, product: selectedProductDetail } = useSelector((state) => state.product);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
@@ -389,18 +412,26 @@ const AllProducts = () => {
     brand: '',
     status: ''
   });
+  
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = !filters.type || product.type === filters.type;
+    const matchesBrand = !filters.brand || product.brand === filters.brand;
+    const matchesStatus = !filters.status || product.stockStatus === filters.status;
+    
+    return matchesSearch && matchesType && matchesBrand && matchesStatus;
+  });
 
-  const totalPages = Math.ceil(total / itemsPerPage);
+  const totalProducts = total || (filteredProducts?.length || 0);
+  const totalPages = Math.ceil(totalProducts / itemsPerPage);
 
   useEffect(() => {
-    const params = {
-      page: currentPage,
-      limit: itemsPerPage,
-      search: searchTerm,
-      ...filters
-    };
-    dispatch(fetchProducts(params));
-  }, [dispatch, currentPage, itemsPerPage, searchTerm, filters]);
+    dispatch(fetchProducts({ 
+      page: currentPage, 
+      limit: itemsPerPage
+    }));
+  }, [dispatch, currentPage, itemsPerPage]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -458,6 +489,10 @@ const AllProducts = () => {
     setIsViewModalOpen(true);
   };
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
   const handleExport = () => {
     const csv = [
       ['Name', 'SKU', 'Brand', 'Price', 'Stock', 'Status'],
@@ -482,74 +517,86 @@ const AllProducts = () => {
     window.URL.revokeObjectURL(url);
   };
 
-  const handlePageChange = (newPage) => {
-    if (newPage > 0 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  };
-
   const handleItemsPerPageChange = (e) => {
     setItemsPerPage(Number(e.target.value));
     setCurrentPage(1);
   };
 
   const renderPagination = () => {
-    if (!products.length) return null;
-
-    const startItem = (currentPage - 1) * itemsPerPage + 1;
-    const endItem = Math.min(currentPage * itemsPerPage, total);
+    if (totalPages <= 1) return null;
+    
+    const pageButtons = [];
+    const showEllipsisStart = currentPage > 3;
+    const showEllipsisEnd = currentPage < totalPages - 2;
+    
+    // Always show first page
+    pageButtons.push(
+      <PageButton
+        key={1}
+        active={currentPage === 1}
+        onClick={() => handlePageChange(1)}
+      >
+        1
+      </PageButton>
+    );
+    
+    // Show ellipsis after first page if necessary
+    if (showEllipsisStart) {
+      pageButtons.push(<PaginationEllipsis key="ellipsis-start">...</PaginationEllipsis>);
+    }
+    
+    // Show pages around current page
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+      if (i === 1 || i === totalPages) continue; // Skip first and last pages as they're always shown
+      pageButtons.push(
+        <PageButton
+          key={i}
+          active={currentPage === i}
+          onClick={() => handlePageChange(i)}
+        >
+          {i}
+        </PageButton>
+      );
+    }
+    
+    // Show ellipsis before last page if necessary
+    if (showEllipsisEnd) {
+      pageButtons.push(<PaginationEllipsis key="ellipsis-end">...</PaginationEllipsis>);
+    }
+    
+    // Always show last page if more than one page
+    if (totalPages > 1) {
+      pageButtons.push(
+        <PageButton
+          key={totalPages}
+          active={currentPage === totalPages}
+          onClick={() => handlePageChange(totalPages)}
+        >
+          {totalPages}
+        </PageButton>
+      );
+    }
 
     return (
       <PaginationContainer>
-        <PaginationInfo>
-          Showing {startItem} to {endItem} of {total} products
-        </PaginationInfo>
-        <PaginationButtons>
+        <PageInfo>
+          Showing {totalProducts > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} to {Math.min(currentPage * itemsPerPage, totalProducts)} of {totalProducts} entries
+        </PageInfo>
+        <PageNavigation>
           <PageButton
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
           >
             <ChevronLeft size={16} />
           </PageButton>
-          
-          {[...Array(totalPages)].map((_, index) => {
-            const pageNumber = index + 1;
-            
-            // Only show a limited number of page buttons
-            if (
-              pageNumber === 1 ||
-              pageNumber === totalPages ||
-              (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-            ) {
-              return (
-                <PageButton
-                  key={pageNumber}
-                  active={pageNumber === currentPage}
-                  onClick={() => handlePageChange(pageNumber)}
-                >
-                  {pageNumber}
-                </PageButton>
-              );
-            }
-            
-            // Show ellipsis for skipped pages
-            if (
-              (pageNumber === currentPage - 2 && pageNumber > 2) ||
-              (pageNumber === currentPage + 2 && pageNumber < totalPages - 1)
-            ) {
-              return <PageButton key={pageNumber} disabled>...</PageButton>;
-            }
-            
-            return null;
-          })}
-          
+          {pageButtons}
           <PageButton
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
           >
             <ChevronRight size={16} />
           </PageButton>
-        </PaginationButtons>
+        </PageNavigation>
       </PaginationContainer>
     );
   };
@@ -561,6 +608,8 @@ const AllProducts = () => {
           <Th>Image</Th>
           <Th>Name</Th>
           <Th>SKU</Th>
+          <Th>Category</Th>
+          <Th>Subcategory</Th>
           <Th>Price</Th>
           <Th>Stock</Th>
           <Th>Status</Th>
@@ -573,6 +622,8 @@ const AllProducts = () => {
             <Td><SkeletonCell width="48px" style={{ height: '48px' }} /></Td>
             <Td><SkeletonCell width="200px" /></Td>
             <Td><SkeletonCell width="100px" /></Td>
+            <Td><SkeletonCell width="100px" /></Td>
+            <Td><SkeletonCell width="100px" /></Td>
             <Td><SkeletonCell width="80px" /></Td>
             <Td><SkeletonCell width="100px" /></Td>
             <Td><SkeletonCell width="80px" /></Td>
@@ -582,6 +633,10 @@ const AllProducts = () => {
       </tbody>
     </Table>
   );
+
+  const displayedProducts = searchTerm || filters.type || filters.brand || filters.status 
+    ? filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+    : products;
 
   return (
     <Container>
@@ -649,7 +704,7 @@ const AllProducts = () => {
 
       {loading ? (
         renderSkeletonLoader()
-      ) : products.length === 0 ? (
+      ) : displayedProducts.length === 0 ? (
         <EmptyState>
           <Title>No products found</Title>
           <Button primary onClick={() => navigate('/products/add')} style={{ marginTop: '1rem' }}>
@@ -674,7 +729,7 @@ const AllProducts = () => {
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {displayedProducts.map((product) => (
                 <tr key={product._id}>
                   <Td>
                     <ProductImage 
@@ -688,11 +743,9 @@ const AllProducts = () => {
                   <Td>{product.subcategory?.name}</Td>  
                   <Td>${product.regularPrice.toFixed(2)}</Td>
                   <Td>
-                    <StockBadge status={product.stockStatus}>
-                      {product.stockStatus === 'in_stock' ? 'In Stock' :
-                       product.stockStatus === 'out_of_stock' ? 'Out of Stock' :
-                       'On Backorder'}
-                    </StockBadge>
+                    <StockStatus inStock={product.stockStatus === 'in_stock'}>
+                      {product.stockStatus === 'in_stock' ? 'In Stock' : 'Out of Stock'}
+                    </StockStatus>
                   </Td>
                   <Td>
                     <Toggle>
@@ -817,11 +870,9 @@ const AllProducts = () => {
                 <ProductDetailSection>
                   <ProductDetailLabel>Stock Status</ProductDetailLabel>
                   <ProductDetailValue>
-                    <StockBadge status={currentProduct.stockStatus}>
-                      {currentProduct.stockStatus === 'in_stock' ? 'In Stock' :
-                       currentProduct.stockStatus === 'out_of_stock' ? 'Out of Stock' :
-                       'On Backorder'}
-                    </StockBadge>
+                    <StockStatus inStock={currentProduct.stockStatus === 'in_stock'}>
+                      {currentProduct.stockStatus === 'in_stock' ? 'In Stock' : 'Out of Stock'}
+                    </StockStatus>
                   </ProductDetailValue>
                 </ProductDetailSection>
 
