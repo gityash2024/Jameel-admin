@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Plus, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { orderAPI } from '../services/api';
 
 const Container = styled.div`
   padding: 2rem;
@@ -221,60 +223,76 @@ const ActionButton = styled.button`
 `;
 
 const OrderAll = () => {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [activeStatus, setActiveStatus] = useState('all');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  const [orders, setOrders] = useState([
-    { id: '#1020', date: '6/7/2024 3:51 pm', customer: 'john due', amount: 61.73, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1017', date: '6/7/2024 3:15 pm', customer: 'john due', amount: 1.97, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1016', date: '26/6/2024 10:23 am', customer: 'john due', amount: 46.14, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1015', date: '25/6/2024 6:34 pm', customer: 'john due', amount: 18.75, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1014', date: '25/6/2024 3:43 pm', customer: 'Rhoda Mayer', amount: 8.23, status: 'COMPLETED', paymentMode: 'cod' },
-    { id: '#1013', date: '24/6/2024 2:29 pm', customer: 'john due', amount: 1.72, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1012', date: '21/6/2024 5:18 pm', customer: 'john due', amount: 6.23, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1011', date: '21/6/2024 5:18 pm', customer: 'john due', amount: 39.72, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1010', date: '21/6/2024 4:29 pm', customer: 'john due', amount: 3.76, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1009', date: '21/6/2024 3:57 pm', customer: 'john due', amount: 1.52, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1006', date: '21/6/2024 3:48 pm', customer: 'john due', amount: 5.49, status: 'PENDING', paymentMode: 'cod' },
-    { id: '#1004', date: '21/6/2024 3:14 pm', customer: 'john due', amount: 231.07, status: 'COMPLETED', paymentMode: 'cod' },
-    { id: '#1003', date: '21/6/2024 3:10 pm', customer: 'john due', amount: 57.80, status: 'CANCELLED', paymentMode: 'cod' },
-    { id: '#1002', date: '21/6/2024 3:07 pm', customer: 'john due', amount: 2177.96, status: 'COMPLETED', paymentMode: 'stripe' },
-    { id: '#1001', date: '21/6/2024 3:02 pm', customer: 'john due', amount: 55.05, status: 'COMPLETED', paymentMode: 'paypal' }
-  ]);
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+  
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await orderAPI.getAllOrders();
+      
+      if (response?.data?.data?.orders) {
+        setOrders(response.data.data.orders);
+      } else {
+        setOrders([]);
+      }
+      
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      setError('Failed to load orders. Please try again later.');
+      toast.error('Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const statusCounts = {
     all: orders.length,
-    pending: orders.filter(order => order.status === 'PENDING').length,
-    processing: orders.filter(order => order.status === 'PROCESSING').length,
-    cancelled: orders.filter(order => order.status === 'CANCELLED').length,
-    shipped: orders.filter(order => order.status === 'SHIPPED').length,
-    outForDelivery: orders.filter(order => order.status === 'OUT_FOR_DELIVERY').length,
-    delivered: orders.filter(order => order.status === 'COMPLETED').length
+    pending: orders.filter(order => order.orderStatus?.toLowerCase() === 'pending').length,
+    processing: orders.filter(order => order.orderStatus?.toLowerCase() === 'processing').length,
+    cancelled: orders.filter(order => order.orderStatus?.toLowerCase() === 'cancelled').length,
+    shipped: orders.filter(order => order.orderStatus?.toLowerCase() === 'shipped').length,
+    outForDelivery: orders.filter(order => order.orderStatus?.toLowerCase() === 'out_for_delivery').length,
+    delivered: orders.filter(order => order.orderStatus?.toLowerCase() === 'delivered').length
   };
 
   const handleViewOrder = (id) => {
-    console.log('View order:', id);
+    navigate(`/orders/${id}`);
   };
 
   const handleAddOrder = () => {
-    console.log('Add order clicked');
-    navigate('/orders/create')
+    navigate('/orders/create');
   };
 
   const filteredOrders = orders
     .filter(order => 
-      (activeStatus === 'all' || order.status.toLowerCase() === activeStatus) &&
-      order.customer.toLowerCase().includes(searchQuery.toLowerCase())
+      (activeStatus === 'all' || order.orderStatus?.toLowerCase() === activeStatus) &&
+      (
+        (order.orderNumber && order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (order.user?.firstName && order.user.firstName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (order.user?.lastName && order.user.lastName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (order.user?.email && order.user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
     )
     .filter(order => {
       if (!startDate || !endDate) return true;
-      const orderDate = new Date(order.date);
+      const orderDate = new Date(order.createdAt);
       const start = new Date(startDate);
       const end = new Date(endDate);
+      // Set end date to end of day
+      end.setHours(23, 59, 59, 999);
       return orderDate >= start && orderDate <= end;
     });
 
@@ -373,42 +391,52 @@ const OrderAll = () => {
         </StatusTab>
       </StatusTabs>
 
-      <Table>
-        <thead>
-          <tr>
-            <Th>Order Number</Th>
-            <Th>Order Date</Th>
-            <Th>Customer Name</Th>
-            <Th>Total Amount</Th>
-            <Th>Payment Status</Th>
-            <Th>Payment Mode</Th>
-            <Th>Action</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredOrders.map(order => (
-            <tr key={order.id}>
-              <Td>{order.id}</Td>
-              <Td>{order.date}</Td>
-              <Td>{order.customer}</Td>
-              <Td>${order.amount.toFixed(2)}</Td>
-              <Td>
-                <StatusBadge status={order.status}>
-                  {order.status}
-                </StatusBadge>
-              </Td>
-
-
-                <Td>{order.paymentMode}</Td>
-              <Td>
-                <ActionButton onClick={() => handleViewOrder(order.id)}>
-                  <Eye size={16} />
-                </ActionButton>
-              </Td>
+      {loading ? (
+        <p>Loading orders...</p>
+      ) : error ? (
+        <p>{error}</p>
+      ) : orders.length === 0 ? (
+        <p>No orders found.</p>
+      ) : (
+        <Table>
+          <thead>
+            <tr>
+              <Th>Order Number</Th>
+              <Th>Order Date</Th>
+              <Th>Customer Name</Th>
+              <Th>Total Amount</Th>
+              <Th>Order Status</Th>
+              <Th>Payment Method</Th>
+              <Th>Action</Th>
             </tr>
-          ))}
-        </tbody>
-      </Table>
+          </thead>
+          <tbody>
+            {filteredOrders.slice(0, itemsPerPage).map(order => (
+              <tr key={order._id}>
+                <Td>{order.orderNumber || 'N/A'}</Td>
+                <Td>{order.createdAt ? new Date(order.createdAt).toLocaleString() : 'N/A'}</Td>
+                <Td>
+                  {order.user ? 
+                    `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() || order.user.email : 
+                    'Guest User'}
+                </Td>
+                <Td>${order.total ? order.total.toFixed(2) : '0.00'}</Td>
+                <Td>
+                  <StatusBadge status={order.orderStatus || 'PENDING'}>
+                    {order.orderStatus ? order.orderStatus.toUpperCase() : 'PENDING'}
+                  </StatusBadge>
+                </Td>
+                <Td>{order.paymentMethod || 'N/A'}</Td>
+                <Td>
+                  <ActionButton onClick={() => handleViewOrder(order._id)}>
+                    <Eye size={16} />
+                  </ActionButton>
+                </Td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      )}
     </Container>
   );
 };

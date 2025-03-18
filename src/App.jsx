@@ -8,6 +8,9 @@ import AddUser from './pages/AddUser';
 import AllUser from './pages/AllUser';
 import RoleUser from './pages/RoleUser';
 import SupportTicketsPage from './pages/SupportTickets';
+import PaymentInfo from './components/PaymentInfo';
+import PaymentDetail from './pages/PaymentDetail';
+import OrderDetail from './pages/OrderDetail';
 
 import Products from './pages/Products';
 import AddProduct from './pages/AddProduct';
@@ -55,6 +58,11 @@ function App() {
             color: '#fff',
           },
         }}
+        gutter={8}
+        containerStyle={{}}
+        containerClassName=""
+        reverseOrder={false}
+        limit={3}
       />
       
       <Routes>
@@ -67,6 +75,8 @@ function App() {
           <Route path="products/add" element={<AddProduct />} />
           <Route path="/products/edit/:id" element={<AddProduct />} />
           <Route path="support-tickets" element={<SupportTicketsPage />} />
+          <Route path="payments" element={<PaymentInfo />} />
+          <Route path="payments/details/:id" element={<PaymentDetail />} />
 
           <Route path="products/all" element={<AllProduct />} />
           <Route path="products/attribute" element={<AttributeProduct />} />
@@ -77,6 +87,7 @@ function App() {
           <Route path="orders" element={<Orders />} />
           <Route path="orders/all" element={<OrderAll />} />
           <Route path="orders/create" element={<CreateOrder />} />
+          <Route path="orders/:id" element={<OrderDetail />} />
           <Route path="media" element={<Media />} />
           <Route path="blogs" element={<Blogs />} />
           <Route path="blogs/add" element={<AddBlogs />} />

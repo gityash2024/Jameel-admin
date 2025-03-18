@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Menu, Search, Globe, Maximize2, Languages, Bell, Sun, User,Eye } from 'lucide-react';
+import { Menu, Search, Globe, Maximize2, Languages, Bell, Sun, User, Eye } from 'lucide-react';
 import styled from 'styled-components';
+import { toast } from 'react-hot-toast';
+import { orderAPI } from '../services/api';
+import { productAPI } from '../services/api';
 import welcomebackadmin from '../assets/welcomebackadmin.png';
 import pending from '../assets/pending.png';
 import processing from '../assets/processing.png';
@@ -506,75 +509,192 @@ const MetricCard = styled.div`
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState({
+    orderStats: {
+      pending: 0,
+      processing: 0,
+      cancelled: 0,
+      shipped: 0,
+      outForDelivery: 0,
+      delivered: 0,
+      total: 0
+    },
+    revenue: {
+      total: 0,
+      today: 0,
+      thisWeek: 0,
+      thisMonth: 0
+    },
+    products: {
+      total: 0,
+      outOfStock: 0
+    },
+    users: {
+      total: 0,
+      newThisMonth: 0
+    },
+    revenueByMonth: [],
+    topCategories: [],
+    recentOrders: [],
+    stockItems: [],
+    reviews: []
+  });
 
- 
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await orderAPI.getDashboardStats();
+      
+      if (response?.data?.data) {
+        setDashboardStats(prevStats => ({
+          ...prevStats,
+          ...response.data.data
+        }));
+      }
+      
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+      toast.error('Failed to load dashboard statistics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Use live data if available, or fall back to default values
   const orderStatus = [
-    { label: 'Pending', count: 12, icon: pending, color: 'pending' },
-    { label: 'Processing', count: 0, icon: processing, color: 'processing' },
-    { label: 'Cancelled', count: 1, icon: cancelled, color: 'cancelled' },
-    { label: 'Shipped', count: 0, icon: shipped, color: 'shipped' },
-    { label: 'Out for delivery', count: 0, icon: outofdelivery, color: 'out-delivery' },
-    { label: 'Delivered', count: 3, icon: deliverd, color: 'delivered' }
+    { 
+      label: 'Pending', 
+      count: dashboardStats.orderStats.pending || 0, 
+      icon: pending, 
+      color: 'pending' 
+    },
+    { 
+      label: 'Processing', 
+      count: dashboardStats.orderStats.processing || 0, 
+      icon: processing, 
+      color: 'processing' 
+    },
+    { 
+      label: 'Cancelled', 
+      count: dashboardStats.orderStats.cancelled || 0, 
+      icon: cancelled, 
+      color: 'cancelled' 
+    },
+    { 
+      label: 'Shipped', 
+      count: dashboardStats.orderStats.shipped || 0, 
+      icon: shipped, 
+      color: 'shipped' 
+    },
+    { 
+      label: 'Out for delivery', 
+      count: dashboardStats.orderStats.outForDelivery || 0, 
+      icon: outofdelivery, 
+      color: 'out-delivery' 
+    },
+    { 
+      label: 'Delivered', 
+      count: dashboardStats.orderStats.delivered || 0, 
+      icon: deliverd, 
+      color: 'delivered' 
+    }
   ];
 
   const metrics = [
-    { label: 'Total Revenue', value: '$2,503.83', icon: totalrevenue, className: 'revenue' },
-    { label: 'Total Products', value: '489', icon: totalproducts, className: 'products' },
-    { label: 'Total Orders', value: '16', icon: totalorders, className: 'orders' },
-    { label: 'Total User', value: '4', icon: totalusers, className: 'users' }
+    { 
+      label: 'Total Revenue', 
+      value: `$${dashboardStats.revenue.total ? dashboardStats.revenue.total.toFixed(2) : '0.00'}`, 
+      icon: totalrevenue, 
+      className: 'revenue' 
+    },
+    { 
+      label: 'Total Products', 
+      value: dashboardStats.products.total || 0, 
+      icon: totalproducts, 
+      className: 'products' 
+    },
+    { 
+      label: 'Total Orders', 
+      value: dashboardStats.orderStats.total || 0, 
+      icon: totalorders, 
+      className: 'orders' 
+    },
+    { 
+      label: 'Total User', 
+      value: dashboardStats.users.total || 0, 
+      icon: totalusers, 
+      className: 'users' 
+    }
   ];
 
 
-  const categories = [
-    { name: 'Ring', orders: 4, earning: 281,},
-    { name: 'Necklace', orders: 0, earning: 0 },
-    { name: 'Bracelet', orders: 1, earning: 42 },
-    { name: 'Engagement', orders: 0, earning: 0 },
-    { name: 'Earrings', orders: 1, earning: 105 },
-    { name: 'Wedding', orders: 0, earning: 0 }
-  ];
+  const categories = dashboardStats.topCategories && dashboardStats.topCategories.length > 0
+    ? dashboardStats.topCategories
+    : [
+        { name: 'Ring', orders: 4, earning: 281 },
+        { name: 'Necklace', orders: 0, earning: 0 },
+        { name: 'Bracelet', orders: 1, earning: 42 },
+        { name: 'Engagement', orders: 0, earning: 0 },
+        { name: 'Earrings', orders: 1, earning: 105 },
+        { name: 'Wedding', orders: 0, earning: 0 }
+      ];
 
-  const revenueData = [
-    { month: 'Jan 24', revenue: 0 },
-    { month: 'Feb 24', revenue: 0 },
-    { month: 'Mar 24', revenue: 0 },
-    { month: 'Apr 24', revenue: 0 },
-    { month: 'May 24', revenue: 0 },
-    { month: 'Jun 24', revenue: 2400 },
-    { month: 'Jul 24', revenue: 0 },
-    { month: 'Aug 24', revenue: 0 },
-    { month: 'Sep 24', revenue: 0 },
-    { month: 'Oct 24', revenue: 0 },
-    { month: 'Nov 24', revenue: 0 },
-    { month: 'Dec 24', revenue: 0 }
-  ];
+  const revenueData = dashboardStats.revenueByMonth && dashboardStats.revenueByMonth.length > 0
+    ? dashboardStats.revenueByMonth
+    : [
+        { month: 'Jan 24', revenue: 0 },
+        { month: 'Feb 24', revenue: 0 },
+        { month: 'Mar 24', revenue: 0 },
+        { month: 'Apr 24', revenue: 0 },
+        { month: 'May 24', revenue: 0 },
+        { month: 'Jun 24', revenue: 2400 },
+        { month: 'Jul 24', revenue: 0 },
+        { month: 'Aug 24', revenue: 0 },
+        { month: 'Sep 24', revenue: 0 },
+        { month: 'Oct 24', revenue: 0 },
+        { month: 'Nov 24', revenue: 0 },
+        { month: 'Dec 24', revenue: 0 }
+      ];
 
-  const recentOrders = [
-    { number: '#1020', date: '6 Jul 2024', name: 'john due', amount: 61.73, status: 'PENDING' },
-    { number: '#1017', date: '6 Jul 2024', name: 'john due', amount: 1.97, status: 'PENDING' },
-    { number: '#1016', date: '26 Jun 2024', name: 'john due', amount: 46.14, status: 'PENDING' },
-    { number: '#1015', date: '25 Jun 2024', name: 'john due', amount: 18.75, status: 'PENDING' },
-    { number: '#1014', date: '25 Jun 2024', name: 'Rhoda Mayer', amount: 8.23, status: 'COMPLETED' },
-    { number: '#1013', date: '24 Jun 2024', name: 'john due', amount: 1.72, status: 'PENDING' },
-    { number: '#1012', date: '21 Jun 2024', name: 'john due', amount: 6.23, status: 'PENDING' }
-  ];
+  const recentOrders = dashboardStats.recentOrders && dashboardStats.recentOrders.length > 0
+    ? dashboardStats.recentOrders
+    : [
+        { number: '#1020', date: '6 Jul 2024', name: 'john due', amount: 61.73, status: 'PENDING' },
+        { number: '#1017', date: '6 Jul 2024', name: 'john due', amount: 1.97, status: 'PENDING' },
+        { number: '#1016', date: '26 Jun 2024', name: 'john due', amount: 46.14, status: 'PENDING' },
+        { number: '#1015', date: '25 Jun 2024', name: 'john due', amount: 18.75, status: 'PENDING' },
+        { number: '#1014', date: '25 Jun 2024', name: 'Rhoda Mayer', amount: 8.23, status: 'COMPLETED' },
+        { number: '#1013', date: '24 Jun 2024', name: 'john due', amount: 1.72, status: 'PENDING' },
+        { number: '#1012', date: '21 Jun 2024', name: 'john due', amount: 6.23, status: 'PENDING' }
+      ];
 
-  const stockItems = [
-    { name: 'OPPO Reno Pro', quantity: 0, status: 'Out Of Stock', image: ring },
-    { name: 'Palm Bliss Unleashed', quantity: 4, status: 'In Stock', image: ring },
-    { name: 'Mustard Crop Top', quantity: 4, status: 'In Stock', image: ring },
-    { name: 'Juicy Green Kiwi', quantity: 5, status: 'In Stock', image: ring },
-    { name: 'OAK Coffee Table', quantity: 5, status: 'In Stock', image: ring },
-    { name: 'Wooden Center Table', quantity: 5, status: 'In Stock', image: ring },
-    { name: 'Deliciously Sweet Strawberry', quantity: 6, status: 'In Stock', image: ring },
-    { name: 'Dog/Cat Teepee Tent', quantity: 8, status: 'In Stock', image: ring }
-  ];
+  const stockItems = dashboardStats.stockItems && dashboardStats.stockItems.length > 0
+    ? dashboardStats.stockItems
+    : [
+        { name: 'OPPO Reno Pro', quantity: 0, status: 'Out Of Stock', image: ring },
+        { name: 'Palm Bliss Unleashed', quantity: 4, status: 'In Stock', image: ring },
+        { name: 'Mustard Crop Top', quantity: 4, status: 'In Stock', image: ring },
+        { name: 'Juicy Green Kiwi', quantity: 5, status: 'In Stock', image: ring },
+        { name: 'OAK Coffee Table', quantity: 5, status: 'In Stock', image: ring },
+        { name: 'Wooden Center Table', quantity: 5, status: 'In Stock', image: ring },
+        { name: 'Deliciously Sweet Strawberry', quantity: 6, status: 'In Stock', image: ring },
+        { name: 'Dog/Cat Teepee Tent', quantity: 8, status: 'In Stock', image: ring }
+      ];
 
-  const reviews = [
-    { product: 'Classic Jacket', user: 'Rhoda Mayer', rating: 4, image: jacket },
-    { product: 'Versatile Shacket', user: 'john due', rating: 5, image: shacket }
-  ];
+  const reviews = dashboardStats.reviews && dashboardStats.reviews.length > 0
+    ? dashboardStats.reviews
+    : [
+        { product: 'Classic Jacket', user: 'Rhoda Mayer', rating: 4, image: jacket },
+        { product: 'Versatile Shacket', user: 'john due', rating: 5, image: shacket }
+      ];
 
   const topProducts = [
     { date: '26 Jun 2024', name: 'Boyfriend Shirts', price: 10.56, orders: 1, stock: 27, amount: 31.52, image: ring },

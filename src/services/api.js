@@ -158,4 +158,36 @@
     updateMedia: (id, data) => http.put(`/media/${id}`, data),
     deleteMedia: (id) => http.delete(`/media/${id}`),
   }
+
+  export const orderAPI = {
+    getAllOrders: (params) => http.get('/orders', { params }),
+    getOrder: (id) => http.get(`/orders/${id}`),
+    createOrder: (data) => http.post('/orders', data),
+    updateOrder: (id, data) => http.put(`/orders/${id}`, data),
+    updateOrderStatus: (id, status) => http.put(`/orders/${id}/status`, { status }),
+    deleteOrder: (id) => http.delete(`/orders/${id}`),
+    getDashboardStats: () => http.get('/orders/stats')
+  };
+
+  export const paymentAPI = {
+    getAllPayments: (params) => http.get('/payments', { params }),
+    getPayment: (id) => http.get(`/payments/${id}`),
+    getPaymentByOrder: (orderId) => http.get(`/payments/order/${orderId}`),
+    processRefund: (paymentId, data) => http.post(`/payments/${paymentId}/refund`, data),
+    downloadInvoice: (paymentId) => http.get(`/payments/${paymentId}/invoice`, { 
+      responseType: 'blob' 
+    }),
+    getTransactions: () => http.get('/payments/transactions')
+  };
+
+  export const couponAPI = {
+    getAllCoupons: (params) => http.get('/coupons', { params }),
+    getCoupon: (id) => http.get(`/coupons/${id}`),
+    createCoupon: (data) => http.post('/coupons', data),
+    updateCoupon: (id, data) => http.put(`/coupons/${id}`, data),
+    deleteCoupon: (id) => http.delete(`/coupons/${id}`),
+    toggleCouponStatus: (id) => http.patch(`/coupons/${id}/toggle-status`),
+    validateCoupon: (code, amount) => http.post('/coupons/validate', { code, amount })
+  };
+
   export default http;

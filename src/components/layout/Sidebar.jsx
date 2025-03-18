@@ -203,8 +203,8 @@ const Sidebar = () => {
       label: 'Products',
       icon: CreditCard,
       path: '/products/all',
-   
-    },{ label: 'Categories', icon: Category,  path: '/products/category' },
+    },
+    { label: 'Categories', icon: Category,  path: '/products/category' },
     { label: 'Sub Categories', icon: Category,  path: '/products/subcategory' },
     { label: 'Tags', icon: ImageIcon,  path: '/products/tgs' }, 
     {
@@ -212,7 +212,11 @@ const Sidebar = () => {
       icon: ShoppingBag,
       path: '/orders/all'
     },
-    
+    {
+      label: 'Payments',
+      icon: DollarSign,
+      path: '/payments'
+    },
     {
       label: 'Media',
       icon: ImageIcon,
@@ -223,26 +227,21 @@ const Sidebar = () => {
       icon: FileText,
       path: '/blogs'
     },
-
     {
       label: "Help Center",
       icon: Calendar,
       path: '/support-tickets'
-   },
-    
-    
-   {
-    label: "Find-Near-Store",
-    icon: MapPin,
-    path: '/find-nearby-store'
-},
-    {
-       label: "Book-In-Appointment",
-       icon: Calendar,
-       path: '/book-in-store-appointment'
     },
-    
-    
+    {
+      label: "Find-Near-Store",
+      icon: MapPin,
+      path: '/find-nearby-store'
+    },
+    {
+      label: "Book-In-Appointment",
+      icon: Calendar,
+      path: '/book-in-store-appointment'
+    },
     {
       label: 'Coupons',
       icon: Tag,
