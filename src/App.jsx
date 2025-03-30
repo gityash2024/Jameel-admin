@@ -21,6 +21,7 @@ import TgsProduct from './pages/TgsProduct';
 import OrderAll from './pages/OrderAll';
 import CreateOrder from './pages/CreateOrder';
 import Media from './pages/Media';
+import Banners from './pages/Banners';
 import Blogs from './pages/Blogs';
 import AddBlogs from './pages/AllBLogs';
 import BlogCategroy from './pages/BlogCategroy';
@@ -40,7 +41,7 @@ import Sales from './pages/Sales';
 import SaleDetails from './pages/SaleDetails';
 import SaleProductlist from './pages/SaleProductlist';
 import SaleOver from './pages/SaleOver';
-import BookInStoreAppointment from './pages/BookInStoreAppointment';
+import MakeWithJSKRequests from './pages/BookInStoreAppointment';
 import FindNearbyStore from './pages/FindNearbyStore';
 import ViewDetails from './pages/ViewDetails';
 import Signup from './pages/Signup';
@@ -73,6 +74,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="products" element={<Products />} />
           <Route path="products/add" element={<AddProduct />} />
+          <Route path="products/edit/:id" element={<AddProduct />} />
           <Route path="/products/edit/:id" element={<AddProduct />} />
           <Route path="support-tickets" element={<SupportTicketsPage />} />
           <Route path="payments" element={<PaymentInfo />} />
@@ -89,6 +91,7 @@ function App() {
           <Route path="orders/create" element={<CreateOrder />} />
           <Route path="orders/:id" element={<OrderDetail />} />
           <Route path="media" element={<Media />} />
+          <Route path="banners" element={<Banners />} />
           <Route path="blogs" element={<Blogs />} />
           <Route path="blogs/add" element={<AddBlogs />} />
           <Route path="blogs/category" element={<BlogCategroy />} />
@@ -109,7 +112,7 @@ function App() {
           <Route path="sales/details" element={<SaleDetails />} />
           <Route path="sales/productlist" element={<SaleProductlist />} />
           <Route path="sales/over" element={<SaleOver />} />
-          <Route path="book-in-store-appointment" element={<BookInStoreAppointment />} />
+          <Route path="book-in-store-appointment" element={<MakeWithJSKRequests />} />
           <Route path="find-nearby-store" element={<FindNearbyStore />} />
           <Route path="view-details" element={<ViewDetails />} />
           <Route path="*" element={<NotFound />} />

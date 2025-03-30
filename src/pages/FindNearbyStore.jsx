@@ -5,6 +5,7 @@ import { Plus, X, MapPin, Phone, Clock, Star, ArrowRight, Trash, Edit, Search, H
 import { fetchStores, createStore, updateStore, deleteStore, setSelectedStore } from '../features/store/storeSlice';
 import { toast } from 'react-hot-toast';
 import GoogleMapReact from 'google-map-react';
+import { API_URL } from '../config/constants';
 
 const shimmer = keyframes`
   0% { background-position: -1000px 0; }
@@ -559,35 +560,40 @@ useEffect(() => {
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-    setIsUploading(true);
+    if (file) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch(
+          `${API_URL}/api/v1/media/upload`,
+          {
+            method: "POST",
+            body: formData
+          }
+        );
 
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch(
-        "https://chirag-backend.onrender.com/api/files/upload",
-        {
-          method: "POST",
-          body: formData
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Upload failed: ${errorData.message || response.statusText}`);
         }
-      );
-      if (!response.ok) {
-        throw new Error(`Failed to upload file: ${response.statusText}`);
+
+        const data = await response.json();
+        console.log("Upload response:", data);
+        
+        if (!data.data || !data.data.fileUrl) {
+          throw new Error('Invalid response format from server');
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          image: data.data.fileUrl
+        }));
+        
+        toast.success(`Image uploaded successfully`);
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast.error(`Failed to upload image: ${error.message}`);
       }
-      const responseData = await response.json();
-      setImage({
-        preview: responseData.fileUrl,
-        url: responseData.fileUrl
-      });
-      setFormData(prev => ({
-        ...prev,
-        image: responseData.fileUrl
-      }));
-    } catch (error) {
-      toast.error(`Error uploading file: ${error.message}`);
-    }finally {
-      setIsUploading(false);
     }
   };
 

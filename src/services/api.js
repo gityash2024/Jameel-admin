@@ -96,7 +96,17 @@
 
   export const productAPI = {
     getAllProducts: (params) => http.get('/products', { params }),
-    getProduct: (id) => http.get(`/products/${id}`),
+    getProduct: async (id) => {
+      console.log(`Requesting product with ID: ${id}`);
+      try {
+        const response = await http.get(`/products/${id}`);
+        console.log('Product fetch successful:', response.data);
+        return response;
+      } catch (error) {
+        console.error('Error fetching product:', error.response?.data || error.message);
+        throw error;
+      }
+    },
     createProduct: (data) => http.post('/products', data),
     updateProduct: (id, data) => http.put(`/products/${id}`, data),
     deleteProduct: (id) => http.delete(`/products/${id}`),

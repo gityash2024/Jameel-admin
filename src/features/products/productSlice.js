@@ -12,9 +12,21 @@ export const fetchProducts = createAsyncThunk(
 
 export const fetchProduct = createAsyncThunk(
   'product/fetchProduct',
-  async (id) => {
-    const response = await productAPI.getProduct(id);
-    return response.data;
+  async (id, { rejectWithValue }) => {
+    try {
+      console.log(`[productSlice] Fetching product with ID: ${id}`);
+      const response = await productAPI.getProduct(id);
+      console.log(`[productSlice] Product fetch successful:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`[productSlice] Error fetching product:`, error);
+      return rejectWithValue(
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        error.message || 
+        'Failed to fetch product'
+      );
+    }
   }
 );
 
@@ -104,8 +116,18 @@ const productSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
+      .addCase(fetchProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.product = null;
+      })
       .addCase(fetchProduct.fulfilled, (state, action) => {
+        state.loading = false;
         state.product = action.payload.data.product;
+      })
+      .addCase(fetchProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
       })
       .addCase(updateProductStatus.fulfilled, (state, action) => {
         const index = state.products.findIndex(

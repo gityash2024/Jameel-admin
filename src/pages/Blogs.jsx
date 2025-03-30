@@ -8,6 +8,7 @@ import axios from 'axios';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { resetModal } from '../features/blog/blogSlice';
+import { API_URL } from '../config/constants';
 
 const Container = styled.div`
   padding: 2rem;
@@ -456,26 +457,36 @@ const Blogs = () => {
     }));
   }, [dispatch, currentPage, searchQuery]);
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        const response = await axios.post(
-          "https://chirag-backend.onrender.com/api/files/upload",
-          formData
-        );
-
-        if (response.data?.fileUrl) {
-          setBlogForm(prev => ({
-            ...prev,
-            featuredImage: response.data.fileUrl
-          }));
+  const handleImageUpload = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const response = await fetch(
+        `${API_URL}/api/v1/media/upload`,
+        {
+          method: "POST",
+          body: formData
         }
-      } catch (error) {
-        toast.error('Failed to upload image');
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Upload failed: ${errorData.message || response.statusText}`);
       }
+      
+      const data = await response.json();
+      console.log("Upload response:", data);
+      
+      if (!data.data || !data.data.fileUrl) {
+        throw new Error('Invalid response format from server');
+      }
+      
+      return data.data.fileUrl;
+    } catch (error) {
+      console.error("Image upload error:", error);
+      toast.error(`Failed to upload image: ${error.message}`);
+      return null;
     }
   };
 
@@ -604,7 +615,18 @@ const Blogs = () => {
             <input
               type="file"
               accept="image/*"
-              onChange={handleImageUpload}
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  handleImageUpload(e.target.files[0]).then(url => {
+                    if (url) {
+                      setBlogForm(prev => ({
+                        ...prev,
+                        featuredImage: url
+                      }));
+                    }
+                  });
+                }
+              }}
               style={{ display: 'none' }}
               id="image-upload"
             />

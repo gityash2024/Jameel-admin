@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { Plus, X, Trash2, Download, FileImage } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import { API_URL } from '../config/constants';
 
 const Container = styled.div`
   padding: 2rem;
@@ -290,42 +291,60 @@ const Media = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleFileUpload = async () => {
     if (!selectedFile) {
-      toast.error('Please select a file');
+      toast.error("Please select a file to upload");
       return;
     }
 
+    setUploading(true);
     try {
+      // Upload file
       const formData = new FormData();
       formData.append("file", selectedFile);
       
-      const response = await axios.post(
-        "https://chirag-backend.onrender.com/api/files/upload",
-        formData
+      const response = await fetch(
+        `${API_URL}/api/v1/media/upload`,
+        {
+          method: "POST",
+          body: formData
+        }
       );
 
-      if (response.data?.fileUrl) {
-        await dispatch(uploadMedia({
-          url: response.data.fileUrl,
-          type: mediaForm.type,
-          folder: mediaForm.folder,
-          alt: mediaForm.alt,
-          caption: mediaForm.caption
-        })).unwrap();
-
-        setIsUploadModalOpen(false);
-        setSelectedFile(null);
-        setSelectedFileUrl('');
-        setMediaForm({
-          folder: 'general',
-          alt: '',
-          caption: '',
-          type: 'image'
-        });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Upload failed: ${errorData.message || response.statusText}`);
       }
+
+      const data = await response.json();
+      console.log("Upload response:", data);
+      
+      if (!data.data || !data.data.fileUrl) {
+        throw new Error('Invalid response format from server');
+      }
+      
+      // Save media details
+      const mediaInfo = {
+        type: selectedFile.type.startsWith("image/") ? "image" : "document",
+        url: data.data.fileUrl,
+        alt: mediaForm.alt || selectedFile.name,
+        folder: mediaForm.folder || "general",
+        caption: mediaForm.caption || ""
+      };
+      
+      // Save to the database through API
+      await axios.post(`${API_URL}/api/v1/media`, mediaInfo, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      fetchMediaFiles();
+      resetUploadForm();
+      toast.success("File uploaded successfully");
     } catch (error) {
-      toast.error('Failed to upload file');
+      console.error("Upload error:", error);
+      toast.error(`Upload failed: ${error.message}`);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -416,7 +435,7 @@ const Media = () => {
           />
         </FormGroup>
 
-        <SubmitButton onClick={handleSubmit} disabled={!selectedFile}>
+        <SubmitButton onClick={handleFileUpload} disabled={!selectedFile}>
           Upload
         </SubmitButton>
       </ModalContent>

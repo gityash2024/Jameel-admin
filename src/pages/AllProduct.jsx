@@ -481,6 +481,7 @@ const AllProducts = () => {
   };
 
   const handleEditClick = (product) => {
+    console.log(`Editing product with ID: ${product._id}`);
     navigate(`/products/edit/${product._id}`);
   };
 
@@ -915,6 +916,153 @@ const AllProducts = () => {
                   />
                 ))}
               </ProductImageContainer>
+            </ProductDetailSection>
+
+            {/* Jewelry Details Section */}
+            <ProductDetailSection>
+              <ProductDetailLabel>Jewelry Details</ProductDetailLabel>
+              <ProductDetailGrid>
+                <div>
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Stone</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.stone || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Total Weight</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.totalWeight || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Color</ProductDetailLabel>
+                    <ProductDetailValue>
+                      {currentProduct.color ? (
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <div style={{ 
+                            width: '20px', 
+                            height: '20px', 
+                            backgroundColor: currentProduct.color,
+                            borderRadius: '4px',
+                            marginRight: '8px',
+                            border: '1px solid #ddd'
+                          }} />
+                          {currentProduct.color}
+                        </div>
+                      ) : '-'}
+                    </ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Clarity</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.clarity || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Stone Type</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.stoneType || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Stone Color</ProductDetailLabel>
+                    <ProductDetailValue>
+                      {currentProduct.stoneColor ? (
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <div style={{ 
+                            width: '20px', 
+                            height: '20px', 
+                            backgroundColor: currentProduct.stoneColor,
+                            borderRadius: '4px',
+                            marginRight: '8px',
+                            border: '1px solid #ddd'
+                          }} />
+                          {currentProduct.stoneColor}
+                        </div>
+                      ) : '-'}
+                    </ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Stone Shape</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.stoneShape || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Stone Carat Range</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.stoneCaratRange || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+                </div>
+
+                <div>
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Stone Class</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.stoneClass || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Stone Setting</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.stoneSetting || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Setting Only</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.settingOnly ? 'Yes' : 'No'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Metal Type</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.metalType || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Metal Color</ProductDetailLabel>
+                    <ProductDetailValue>
+                      {currentProduct.metalColor ? (
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <div style={{ 
+                            width: '20px', 
+                            height: '20px', 
+                            backgroundColor: currentProduct.metalColor,
+                            borderRadius: '4px',
+                            marginRight: '8px',
+                            border: '1px solid #ddd'
+                          }} />
+                          {currentProduct.metalColor}
+                        </div>
+                      ) : '-'}
+                    </ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Metal Finish</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.metalFinish || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Gold Karat</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.goldKarat || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Ring Design</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.ringDesign || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Ring Style</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.ringStyle || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Standard Ring Size</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.standardRingSize || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+
+                  <ProductDetailSection>
+                    <ProductDetailLabel>Height</ProductDetailLabel>
+                    <ProductDetailValue>{currentProduct.height || '-'}</ProductDetailValue>
+                  </ProductDetailSection>
+                </div>
+              </ProductDetailGrid>
             </ProductDetailSection>
           </ModalContent>
         </Modal>

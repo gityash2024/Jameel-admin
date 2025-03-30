@@ -223,6 +223,11 @@ const Sidebar = () => {
       path: '/media'
     },
     {
+      label: 'Banners',
+      icon: ImageIcon,
+      path: '/banners'
+    },
+    {
       label: 'Blog',
       icon: FileText,
       path: '/blogs'
@@ -238,7 +243,7 @@ const Sidebar = () => {
       path: '/find-nearby-store'
     },
     {
-      label: "Book-In-Appointment",
+      label: "Make with JSK",
       icon: Calendar,
       path: '/book-in-store-appointment'
     },
