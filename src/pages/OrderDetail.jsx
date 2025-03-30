@@ -4,6 +4,8 @@ import styled from 'styled-components';
 import { ArrowLeft, Truck, Download, Edit, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { orderAPI } from '../services/api';
+import { Box, Grid, Typography, Card, CardContent, Button, TextField, MenuItem, Chip } from '@mui/material';
+import { LoadingButton } from '@mui/lab';
 
 const Container = styled.div`
   padding: 2rem;
@@ -33,14 +35,6 @@ const Title = styled.h1`
   font-size: 1.5rem;
   color: #333;
   margin: 0;
-`;
-
-const Card = styled.div`
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
 `;
 
 const CardTitle = styled.h2`
@@ -209,6 +203,7 @@ const OrderDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [newStatus, setNewStatus] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   useEffect(() => {
     fetchOrderDetails();
@@ -257,6 +252,26 @@ const OrderDetail = () => {
   
   const handleEditOrder = () => {
     navigate(`/orders/edit/${id}`);
+  };
+  
+  const handleShippingUpdate = async (event) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData(event.currentTarget);
+      const trackingNumber = formData.get('trackingNumber');
+      const serviceType = formData.get('serviceType');
+      const estimatedDeliveryDate = formData.get('estimatedDeliveryDate');
+      
+      await orderAPI.updateShipping(id, { trackingNumber, serviceType, estimatedDeliveryDate });
+      fetchOrderDetails();
+      toast.success('Shipping information updated successfully');
+    } catch (error) {
+      console.error('Error updating shipping information:', error);
+      toast.error('Failed to update shipping information');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   if (loading) {
@@ -400,39 +415,188 @@ const OrderDetail = () => {
         </InfoGrid>
       </Card>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardTitle>Shipping Address</CardTitle>
-          {order.shippingAddress ? (
-            <div>
-              <Value>{order.shippingAddress.firstName} {order.shippingAddress.lastName}</Value>
-              <Value>{order.shippingAddress.addressLine1}</Value>
-              {order.shippingAddress.addressLine2 && <Value>{order.shippingAddress.addressLine2}</Value>}
-              <Value>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}</Value>
-              <Value>{order.shippingAddress.country}</Value>
-              <Value>{order.shippingAddress.phone}</Value>
-            </div>
-          ) : (
-            <p>No shipping address provided</p>
-          )}
-        </Card>
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h6" gutterBottom component="div">
+          Shipping Information
+        </Typography>
         
+        <Grid container spacing={2}>
+          <Grid item xs={12}>
         <Card>
-          <CardTitle>Billing Address</CardTitle>
-          {order.billingAddress ? (
-            <div>
-              <Value>{order.billingAddress.firstName} {order.billingAddress.lastName}</Value>
-              <Value>{order.billingAddress.addressLine1}</Value>
-              {order.billingAddress.addressLine2 && <Value>{order.billingAddress.addressLine2}</Value>}
-              <Value>{order.billingAddress.city}, {order.billingAddress.state} {order.billingAddress.postalCode}</Value>
-              <Value>{order.billingAddress.country}</Value>
-              <Value>{order.billingAddress.phone}</Value>
-            </div>
-          ) : (
-            <p>Same as shipping address</p>
-          )}
+              <CardContent>
+                <Typography variant="subtitle1" gutterBottom>
+                  Shipping Address
+                </Typography>
+                
+                <Typography variant="body2">
+                  {order?.shippingAddress?.firstName} {order?.shippingAddress?.lastName}
+                </Typography>
+                <Typography variant="body2">
+                  {order?.shippingAddress?.addressLine1}
+                </Typography>
+                {order?.shippingAddress?.addressLine2 && (
+                  <Typography variant="body2">
+                    {order?.shippingAddress?.addressLine2}
+                  </Typography>
+                )}
+                <Typography variant="body2">
+                  {order?.shippingAddress?.city}, {order?.shippingAddress?.state} {order?.shippingAddress?.postalCode}
+                </Typography>
+                <Typography variant="body2">
+                  {order?.shippingAddress?.country}
+                </Typography>
+                <Typography variant="body2">
+                  {order?.shippingAddress?.phone}
+                </Typography>
+              </CardContent>
         </Card>
-      </div>
+          </Grid>
+        
+          <Grid item xs={12}>
+        <Card>
+              <CardContent>
+                <Typography variant="subtitle1" gutterBottom>
+                  FedEx Shipping Details
+                </Typography>
+                
+                {order?.shipping?.trackingNumber ? (
+                  <Box>
+                    <Box display="flex" flexDirection="row" alignItems="center" mb={2}>
+                      <Box flexGrow={1}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Tracking Number:
+                        </Typography>
+                        <Typography variant="body2">
+                          {order.shipping.trackingNumber}
+                        </Typography>
+                      </Box>
+                      <Button 
+                        variant="outlined" 
+                        size="small" 
+                        component="a" 
+                        href={order.shipping.trackingUrl || `https://www.fedex.com/fedextrack/?trknbr=${order.shipping.trackingNumber}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Track Package
+                      </Button>
+                    </Box>
+                    
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Service Type:
+                        </Typography>
+                        <Typography variant="body2">
+                          {order.shipping.serviceType || "Standard"}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={6}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Estimated Delivery:
+                        </Typography>
+                        <Typography variant="body2">
+                          {order.shipping.estimatedDeliveryDate 
+                            ? new Date(order.shipping.estimatedDeliveryDate).toLocaleDateString() 
+                            : "Not available"}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={6}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Shipped Date:
+                        </Typography>
+                        <Typography variant="body2">
+                          {order.shipping.shippedAt 
+                            ? new Date(order.shipping.shippedAt).toLocaleDateString() 
+                            : "Not shipped yet"}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={6}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Shipping Status:
+                        </Typography>
+                        <Chip 
+                          label={order.shipping.status?.replace('_', ' ') || "Processing"} 
+                          color={
+                            order.shipping.status === 'delivered' ? 'success' :
+                            order.shipping.status === 'in_transit' ? 'info' :
+                            order.shipping.status === 'out_for_delivery' ? 'warning' :
+                            'default'
+                          }
+                          size="small"
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      No shipping details available yet. Use the form below to add shipping information.
+                    </Typography>
+                    
+                    <Box component="form" onSubmit={handleShippingUpdate} sx={{ mt: 2 }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            label="Tracking Number"
+                            name="trackingNumber"
+                            size="small"
+                            required
+                          />
+                        </Grid>
+                        
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            label="Service Type"
+                            name="serviceType"
+                            size="small"
+                            select
+                            defaultValue="FEDEX_GROUND"
+                          >
+                            <MenuItem value="FEDEX_GROUND">FedEx Ground</MenuItem>
+                            <MenuItem value="FEDEX_EXPRESS_SAVER">FedEx Express Saver</MenuItem>
+                            <MenuItem value="FEDEX_2DAY">FedEx 2Day</MenuItem>
+                            <MenuItem value="PRIORITY_OVERNIGHT">Priority Overnight</MenuItem>
+                          </TextField>
+                        </Grid>
+                        
+                        <Grid item xs={6}>
+                          <TextField
+                            fullWidth
+                            label="Estimated Delivery Date"
+                            name="estimatedDeliveryDate"
+                            type="date"
+                            size="small"
+                            InputLabelProps={{
+                              shrink: true,
+                            }}
+                          />
+                        </Grid>
+                        
+                        <Grid item xs={12}>
+                          <LoadingButton
+                            type="submit"
+                            variant="contained"
+                            loading={isSubmitting}
+                            fullWidth
+                          >
+                            Add Shipping Information
+                          </LoadingButton>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </Box>
+                )}
+              </CardContent>
+        </Card>
+          </Grid>
+        </Grid>
+      </Box>
       
       <Card>
         <CardTitle>Order Items</CardTitle>

@@ -21,8 +21,8 @@ const Header = styled.div`
 
 const Title = styled.h1`
   font-size: 24px;
-  color: #111827;
-  font-weight: 600;
+    color: #111827;
+    font-weight: 600;
 `;
 
 const SearchContainer = styled.div`
@@ -35,18 +35,18 @@ const SearchContainer = styled.div`
 `;
 
 const SearchInput = styled.input`
-  width: 100%;
+    width: 100%;
   padding: 10px 16px 10px 40px;
-  border: 1px solid #E5E7EB;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.2s;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
 
-  &:focus {
-    outline: none;
-    border-color: #2563EB;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-  }
+    &:focus {
+      outline: none;
+      border-color: #2563EB;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
 `;
 
 const SearchIcon = styled.div`
@@ -54,7 +54,7 @@ const SearchIcon = styled.div`
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9CA3AF;
+      color: #9CA3AF;
 `;
 
 const FiltersContainer = styled.div`
@@ -263,8 +263,8 @@ const StatusUpdateButton = styled.button`
       return `
         background-color: #EF4444;
         color: white;
-        
-        &:hover {
+
+  &:hover {
           background-color: #DC2626;
         }
       `;
@@ -441,7 +441,7 @@ const MakeWithJSKRequests = () => {
       </Container>
     );
   }
-  
+
   return (
     <Container>
       <Header>
@@ -458,7 +458,7 @@ const MakeWithJSKRequests = () => {
           />
         </SearchContainer>
       </Header>
-      
+
       <FiltersContainer>
         <FilterSelect 
           value={statusFilter}

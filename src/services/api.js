@@ -170,11 +170,23 @@
   }
 
   export const orderAPI = {
-    getAllOrders: (params) => http.get('/orders', { params }),
-    getOrder: (id) => http.get(`/orders/${id}`),
+    getAllOrders: async (queryParams) => {
+      return await http.get('/orders', { params: queryParams });
+    },
+    getOrderById: async (id) => {
+      return await http.get(`/orders/${id}`);
+    },
+    updateOrderStatus: async (id, status) => {
+      return await http.put(`/orders/${id}/status`, { status });
+    },
+    updateShipping: async (id, shippingData) => {
+      return await http.put(`/orders/${id}/shipping`, shippingData);
+    },
+    trackShipment: async (id) => {
+      return await http.get(`/orders/${id}/track`);
+    },
     createOrder: (data) => http.post('/orders', data),
     updateOrder: (id, data) => http.put(`/orders/${id}`, data),
-    updateOrderStatus: (id, status) => http.put(`/orders/${id}/status`, { status }),
     deleteOrder: (id) => http.delete(`/orders/${id}`),
     getDashboardStats: () => http.get('/orders/stats')
   };
