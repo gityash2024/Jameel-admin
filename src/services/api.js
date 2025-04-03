@@ -173,6 +173,9 @@
     getAllOrders: async (queryParams) => {
       return await http.get('/orders', { params: queryParams });
     },
+    getOrder: async (id) => {
+      return await http.get(`/orders/${id}`);
+    },
     getOrderById: async (id) => {
       return await http.get(`/orders/${id}`);
     },
@@ -185,10 +188,27 @@
     trackShipment: async (id) => {
       return await http.get(`/orders/${id}/track`);
     },
+    createShippingLabel: async (id, serviceType) => {
+      return await http.post(`/shipping/create-label/${id}`, { serviceType });
+    },
     createOrder: (data) => http.post('/orders', data),
     updateOrder: (id, data) => http.put(`/orders/${id}`, data),
     deleteOrder: (id) => http.delete(`/orders/${id}`),
-    getDashboardStats: () => http.get('/orders/stats')
+    getDashboardStats: () => http.get('/orders/stats'),
+    generateInvoice: (id) => http.get(`/orders/${id}/invoice`, { responseType: 'blob' }),
+    cancelShipment: async (id) => {
+      return await http.delete(`/shipping/cancel/${id}`);
+    }
+  };
+
+  export const shippingAPI = {
+    getShippingMethods: () => http.get('/shipping/methods'),
+    getDeliveryEstimate: (postalCode, shippingMethod) => 
+      http.get(`/shipping/delivery-estimate?postalCode=${postalCode}${shippingMethod ? `&method=${shippingMethod}` : ''}`),
+    calculateShippingRates: (data) => http.post('/shipping/rates', data),
+    trackShipment: (trackingNumber) => http.get(`/shipping/track/${trackingNumber}`),
+    createShippingLabel: (orderId, serviceType) => http.post(`/shipping/create-label/${orderId}`, { serviceType }),
+    cancelShipment: (shipmentId) => http.delete(`/shipping/cancel/${shipmentId}`),
   };
 
   export const paymentAPI = {

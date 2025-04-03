@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
-import { ArrowLeft, Truck, Download, Edit, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Truck, Download, Edit, CheckCircle, XCircle, Package, Clipboard, MapPin, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { orderAPI } from '../services/api';
-import { Box, Grid, Typography, Card, CardContent, Button, TextField, MenuItem, Chip } from '@mui/material';
-import { LoadingButton } from '@mui/lab';
+import { Box, Grid, Typography, Card, CardContent, Button, TextField, MenuItem, Chip, Divider, Paper } from '@mui/material';
+import { LoadingButton, Timeline, TimelineItem, TimelineSeparator, TimelineConnector, TimelineContent, TimelineDot, TimelineOppositeContent } from '@mui/lab';
 
 const Container = styled.div`
   padding: 2rem;
@@ -196,6 +196,79 @@ const StatusActions = styled.div`
   align-items: center;
 `;
 
+const TrackingHistory = styled.div`
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+`;
+
+const TrackingEvent = styled.div`
+  display: flex;
+  margin-bottom: 16px;
+  
+  .timestamp {
+    width: 180px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .content {
+    flex: 1;
+    
+    .status {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .details {
+      font-size: 14px;
+      color: #666;
+    }
+  }
+  
+  .location {
+    width: 200px;
+    font-size: 14px;
+    color: #666;
+    text-align: right;
+  }
+`;
+
+const PackageDetailsBox = styled.div`
+  margin-top: 16px;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  
+  h4 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  
+  .detail-item {
+    .label {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    
+    .value {
+      font-size: 15px;
+      font-weight: 500;
+      color: #333;
+    }
+  }
+`;
+
 const OrderDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -242,12 +315,66 @@ const OrderDetail = () => {
     }
   };
   
-  const handleDownloadInvoice = () => {
-    toast.error('Invoice download functionality not yet implemented');
+  const handlePrintShipping = async () => {
+    try {
+      if (!order.shipping || !order.shipping.trackingNumber) {
+        // If no shipping information exists, create a new shipping label
+        setIsSubmitting(true);
+        const response = await orderAPI.createShippingLabel(id, 'FEDEX_GROUND');
+        
+        if (response.data && response.data.success) {
+          // Refresh order details to get the new shipping information
+          await fetchOrderDetails();
+          
+          // Check if we have label URL and open it in a new tab
+          if (response.data.data && response.data.data.labelUrl) {
+            window.open(response.data.data.labelUrl, '_blank');
+          } else {
+            toast.success('Shipping label created successfully.');
+          }
+        }
+      } else if (order.shipping.labelUrl) {
+        // If label URL exists, open it in a new tab
+        window.open(order.shipping.labelUrl, '_blank');
+      } else {
+        // If shipping exists but no label URL, try to create a new one
+        const response = await orderAPI.createShippingLabel(id, order.shipping.serviceType || 'FEDEX_GROUND');
+        
+        if (response.data && response.data.success && response.data.data && response.data.data.labelUrl) {
+          window.open(response.data.data.labelUrl, '_blank');
+        } else {
+          toast.error('Could not generate shipping label. Please try again later.');
+        }
+      }
+    } catch (error) {
+      console.error('Error handling shipping label:', error);
+      toast.error('Failed to generate shipping label. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
-  const handlePrintShipping = () => {
-    toast.error('Print shipping label functionality not yet implemented');
+  const handleDownloadInvoice = async () => {
+    try {
+      const response = await orderAPI.generateInvoice(id);
+      // Create a blob from the response data
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a link and click it to trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `invoice-${order.orderNumber || id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the URL
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      toast.error('Failed to download invoice');
+    }
   };
   
   const handleEditOrder = () => {
@@ -262,8 +389,34 @@ const OrderDetail = () => {
       const trackingNumber = formData.get('trackingNumber');
       const serviceType = formData.get('serviceType');
       const estimatedDeliveryDate = formData.get('estimatedDeliveryDate');
+      const carrierValue = formData.get('carrierInfo');
       
-      await orderAPI.updateShipping(id, { trackingNumber, serviceType, estimatedDeliveryDate });
+      // Prepare carrier information
+      const carrierInfo = {
+        carrier: carrierValue
+      };
+      
+      // Create package details
+      const packageDetails = {
+        packageType: 'Your Packaging',
+        weight: 1, // Default weight
+        dimensions: {
+          length: 10,
+          width: 10,
+          height: 5,
+          unit: 'IN'
+        }
+      };
+      
+      await orderAPI.updateShipping(id, { 
+        trackingNumber, 
+        serviceType, 
+        estimatedDeliveryDate,
+        carrierInfo,
+        packageDetails,
+        status: 'pending'
+      });
+      
       fetchOrderDetails();
       toast.success('Shipping information updated successfully');
     } catch (error) {
@@ -271,6 +424,19 @@ const OrderDetail = () => {
       toast.error('Failed to update shipping information');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+  
+  const handleRefreshTracking = async () => {
+    try {
+      const response = await orderAPI.trackShipment(id);
+      if (response.data && response.data.success) {
+        fetchOrderDetails();
+        toast.success('Tracking information updated successfully');
+      }
+    } catch (error) {
+      console.error('Error refreshing tracking information:', error);
+      toast.error('Failed to refresh tracking information');
     }
   };
   
@@ -324,7 +490,7 @@ const OrderDetail = () => {
         <Title>Order {order.orderNumber || id}</Title>
       </Header>
       
-      <Card>
+      <Card className='p-4'>
         <CardTitle>
           <span>Order Information</span>
           <StatusActions>
@@ -393,7 +559,7 @@ const OrderDetail = () => {
         </ActionButtons>
       </Card>
       
-      <Card>
+      <Card className='p-4'>
         <CardTitle>Customer Information</CardTitle>
         <InfoGrid>
           <InfoItem>
@@ -455,9 +621,21 @@ const OrderDetail = () => {
           <Grid item xs={12}>
         <Card>
               <CardContent>
-                <Typography variant="subtitle1" gutterBottom>
-                  FedEx Shipping Details
-                </Typography>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    FedEx Shipping Details
+                  </Typography>
+                  {order?.shipping?.trackingNumber && (
+                    <Button 
+                      variant="outlined" 
+                      size="small" 
+                      startIcon={<RefreshCw size={16} />}
+                      onClick={handleRefreshTracking}
+                    >
+                      Refresh Tracking
+                    </Button>
+                  )}
+                </Box>
                 
                 {order?.shipping?.trackingNumber ? (
                   <Box>
@@ -519,17 +697,152 @@ const OrderDetail = () => {
                           Shipping Status:
                         </Typography>
                         <Chip 
-                          label={order.shipping.status?.replace('_', ' ') || "Processing"} 
+                          label={order.shipping.status?.replace('_', ' ').toUpperCase() || "PROCESSING"} 
                           color={
                             order.shipping.status === 'delivered' ? 'success' :
                             order.shipping.status === 'in_transit' ? 'info' :
                             order.shipping.status === 'out_for_delivery' ? 'warning' :
+                            order.shipping.status === 'exception' ? 'error' :
                             'default'
                           }
                           size="small"
                         />
                       </Grid>
+                      
+                      <Grid item xs={6}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Carrier:
+                        </Typography>
+                        <Typography variant="body2">
+                          {order.shipping.carrier || "FedEx"}
+                        </Typography>
+                      </Grid>
+                      
+                      <Grid item xs={6}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Last Updated:
+                        </Typography>
+                        <Typography variant="body2">
+                          {order.shipping.lastUpdated 
+                            ? new Date(order.shipping.lastUpdated).toLocaleString() 
+                            : "N/A"}
+                        </Typography>
+                      </Grid>
                     </Grid>
+                    
+                    {order.shipping.packageDetails && (
+                      <PackageDetailsBox>
+                        <h4>Package Details</h4>
+                        <div className="details-grid">
+                          {order.shipping.packageDetails.weight && (
+                            <div className="detail-item">
+                              <div className="label">Weight</div>
+                              <div className="value">{order.shipping.packageDetails.weight} lbs</div>
+                            </div>
+                          )}
+                          
+                          {order.shipping.packageDetails.dimensions && (
+                            <>
+                              <div className="detail-item">
+                                <div className="label">Dimensions</div>
+                                <div className="value">
+                                  {order.shipping.packageDetails.dimensions.length} x {order.shipping.packageDetails.dimensions.width} x {order.shipping.packageDetails.dimensions.height} {order.shipping.packageDetails.dimensions.unit || "IN"}
+                                </div>
+                              </div>
+                              
+                              <div className="detail-item">
+                                <div className="label">Package Type</div>
+                                <div className="value">{order.shipping.packageDetails.packageType || "Your Packaging"}</div>
+                              </div>
+                            </>
+                          )}
+                          
+                          <div className="detail-item">
+                            <div className="label">Package Count</div>
+                            <div className="value">{order.shipping.packageCount || 1}</div>
+                          </div>
+                        </div>
+                      </PackageDetailsBox>
+                    )}
+                    
+                    {order.shipping.trackingHistory && order.shipping.trackingHistory.length > 0 && (
+                      <TrackingHistory>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Tracking History
+                        </Typography>
+                        <Timeline>
+                          {order.shipping.trackingHistory.map((event, index) => (
+                            <TimelineItem key={index}>
+                              <TimelineOppositeContent color="text.secondary">
+                                {new Date(event.timestamp).toLocaleString()}
+                              </TimelineOppositeContent>
+                              <TimelineSeparator>
+                                <TimelineDot color={event.isException ? "error" : "primary"} />
+                                {index < order.shipping.trackingHistory.length - 1 && <TimelineConnector />}
+                              </TimelineSeparator>
+                              <TimelineContent>
+                                <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                  {event.status}
+                                </Typography>
+                                <Typography variant="body2">
+                                  {event.statusDetails}
+                                </Typography>
+                                {event.location && (
+                                  <Typography variant="body2" color="text.secondary">
+                                    {event.location}
+                                  </Typography>
+                                )}
+                              </TimelineContent>
+                            </TimelineItem>
+                          ))}
+                        </Timeline>
+                      </TrackingHistory>
+                    )}
+                    
+                    {/* Delivery Proof Section */}
+                    {order.shipping.status === 'delivered' && (
+                      <Box mt={3} p={2} bgcolor="#f8f8f8" borderRadius={1}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Delivery Information
+                        </Typography>
+                        <Grid container spacing={2}>
+                          {order.shipping.deliveredAt && (
+                            <Grid item xs={6}>
+                              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                Delivered On:
+                              </Typography>
+                              <Typography variant="body2">
+                                {new Date(order.shipping.deliveredAt).toLocaleString()}
+                              </Typography>
+                            </Grid>
+                          )}
+                          
+                          {order.shipping.receivedBy && (
+                            <Grid item xs={6}>
+                              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                Received By:
+                              </Typography>
+                              <Typography variant="body2">
+                                {order.shipping.receivedBy}
+                              </Typography>
+                            </Grid>
+                          )}
+                          
+                          {order.shipping.signature && (
+                            <Grid item xs={12}>
+                              <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                Signature:
+                              </Typography>
+                              <Box mt={1} p={1} border="1px solid #ddd" borderRadius={1} textAlign="center">
+                                <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                  {order.shipping.signature}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                          )}
+                        </Grid>
+                      </Box>
+                    )}
                   </Box>
                 ) : (
                   <Box>
@@ -576,6 +889,22 @@ const OrderDetail = () => {
                               shrink: true,
                             }}
                           />
+                        </Grid>
+                        
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            label="Carrier"
+                            name="carrierInfo"
+                            size="small"
+                            select
+                            defaultValue="FedEx"
+                          >
+                            <MenuItem value="FedEx">FedEx</MenuItem>
+                            <MenuItem value="UPS">UPS</MenuItem>
+                            <MenuItem value="USPS">USPS</MenuItem>
+                            <MenuItem value="DHL">DHL</MenuItem>
+                          </TextField>
                         </Grid>
                         
                         <Grid item xs={12}>
