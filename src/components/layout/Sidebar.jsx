@@ -243,7 +243,7 @@ const Sidebar = () => {
       path: '/find-nearby-store'
     },
     {
-      label: "Make with JSK",
+      label: "Create with JSK",
       icon: Calendar,
       path: '/book-in-store-appointment'
     },

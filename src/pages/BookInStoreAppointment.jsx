@@ -420,7 +420,7 @@ const MakeWithJSKRequests = () => {
     return (
       <Container>
         <Header>
-          <Title>Make with JSK Requests</Title>
+          <Title>Create with JSK Requests</Title>
         </Header>
         <LoadingContainer>
           <div>Loading...</div>
@@ -433,7 +433,7 @@ const MakeWithJSKRequests = () => {
     return (
       <Container>
         <Header>
-          <Title>Make with JSK Requests</Title>
+          <Title>Create with JSK Requests</Title>
         </Header>
         <div style={{ textAlign: 'center', padding: '40px', color: '#EF4444' }}>
           {error}
@@ -445,7 +445,7 @@ const MakeWithJSKRequests = () => {
   return (
     <Container>
       <Header>
-        <Title>Make with JSK Requests</Title>
+        <Title>Create with JSK Requests</Title>
         <SearchContainer>
           <SearchIcon>
             <Search size={18} />
@@ -487,7 +487,7 @@ const MakeWithJSKRequests = () => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px' }}>
             <NoDataSvg />
             <h3 style={{ marginTop: '24px', fontSize: '18px', fontWeight: '600', color: '#374151' }}>
-              No Make with JSK Requests Found
+              No Create with JSK Requests Found
             </h3>
             <p style={{ marginTop: '8px', color: '#6B7280', maxWidth: '400px', textAlign: 'center' }}>
               There are currently no custom design requests. Check back later or adjust your filters.
@@ -502,6 +502,7 @@ const MakeWithJSKRequests = () => {
                 <Th>Customer</Th>
                 <Th>Product Info</Th>
                 <Th>Appointment</Th>
+                <Th>Store</Th>
                 <Th>Status</Th>
                 <Th>Action</Th>
               </tr>
@@ -536,6 +537,20 @@ const MakeWithJSKRequests = () => {
                       <Clock size={14} />
                       <span>{appointment.appointmentTime}</span>
                     </div>
+                  </Td>
+                  <Td>
+                    {appointment.store ? (
+                      <div>
+                        <div style={{ fontWeight: 500, color: '#374151', marginBottom: '4px' }}>
+                          {appointment.store.name}
+                        </div>
+                        <div style={{ fontSize: '13px' }}>
+                          {appointment.store.address?.city}, {appointment.store.address?.state}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ color: '#9CA3AF' }}>No store selected</div>
+                    )}
                   </Td>
                   <Td>
                     <Status status={appointment.status}>
@@ -601,6 +616,16 @@ const MakeWithJSKRequests = () => {
                   <div>
                     <div style={{ fontSize: '13px', color: '#6B7280' }}>Time</div>
                     <DetailValue>{currentAppointment.appointmentTime}</DetailValue>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#6B7280' }}>Store Location</div>
+                    <DetailValue>
+                      {currentAppointment.store ? (
+                        currentAppointment.store.name ? 
+                        `${currentAppointment.store.name} - ${currentAppointment.store.address?.city || ''}, ${currentAppointment.store.address?.state || ''}` 
+                        : currentAppointment.store
+                      ) : 'N/A'}
+                    </DetailValue>
                   </div>
                 </Grid>
               </DetailItem>

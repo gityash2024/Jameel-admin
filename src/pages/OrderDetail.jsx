@@ -761,7 +761,7 @@ const OrderDetail = () => {
                             <div className="label">Package Count</div>
                             <div className="value">{order.shipping.packageCount || 1}</div>
                           </div>
-                        </div>
+            </div>
                       </PackageDetailsBox>
                     )}
                     
