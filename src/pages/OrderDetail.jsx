@@ -614,6 +614,17 @@ const OrderDetail = () => {
                 <Typography variant="body2">
                   {order?.shippingAddress?.phone}
                 </Typography>
+                {order?.message && (
+                  <>
+                    <Divider sx={{ my: 2 }} />
+                    <Typography variant="subtitle1" gutterBottom>
+                      Customer Message
+                    </Typography>
+                    <Typography variant="body2" sx={{ whiteSpace: 'pre-line', p: 1, bgcolor: '#f8f9fa', borderRadius: 1 }}>
+                      {order?.message}
+                    </Typography>
+                  </>
+                )}
               </CardContent>
         </Card>
           </Grid>
